@@ -215,7 +215,7 @@ if __name__ == "__main__":
 # Performing the Calculation of the Wavefunction - A will be the DataMatrix - as above this had to bigger in the end
     snapshots = 50
     betweenSnp = 40
-    A           = np.zeros((snapshots,len(psi0.flatten())))
+    A           = np.zeros((snapshots,len(psi0.flatten())), dtype=np.complex)
    
     print("Start with Leapfrog")     
     for i in range(snapshots):
