@@ -9,33 +9,10 @@ import numpy as np
 import matplotlib.pylab as plt
 from numpy import*
 from matplotlib.pylab import*
-
-#Printing Movie
-def ani_frame(Array, path, title):
-    
-    fig = plt.figure()
-    fig.suptitle(title)
-    ax = fig.add_subplot(111)
-    ax.set_aspect('equal')
-    length = shape(Array)[2]
-    im = ax.imshow(Array[:,:,0], animated = True, cmap = "gist_ncar")
-    fig.colorbar(im)
-    dpi = 100
-    
-    tight_layout()
-
-    def update_img(n):
-        tmp = Array[:,:,n]
-        im.set_data(tmp)
-        return im
-
-    ani = animation.FuncAnimation(fig,update_img,length,interval=60)
-    writer = animation.writers['ffmpeg'](fps=10)
-
-    ani.save(path,writer=writer,dpi=dpi)
-    print("done with movie")
-    plt.close()
- 
+import matplotlib.animation as animation
+import os
+from movie import*
+from scipy.integrate import ode 
 
 
 #Singular Value Decomposition - Output POD-Modes   
@@ -116,7 +93,6 @@ for t in T:
 ani_frame(Movie,"Original.mp4","Versuch")
 ModesAll, Atemps = SVD_Modes(A,Nx,Ny,nModes =10)
 
-
 #Take only the first [cut] Modes - because fast decay
 cut = 1
 ModesCut = ModesAll[:cut,:,:]
@@ -144,24 +120,16 @@ r.set_initial_value(y0, t0)
 POD_A = []
 time = []
 while r.successful() and r.t < tf:
-    r.integrate(r.t+dt)
-    POD_A.append(r.y)
     time.append(r.t)
- 
-#Backtransformation to the SVD form   
-ModesFlat = zeros((cut,Ny*Nx), dtype=complex)
-for i in range(cut):
-    ModesFlat[i,:] = ModesCut[i].flatten() 
+    POD_A.append(r.y)    
+    r.integrate(r.t+dt)
 
 
-POD_A = asarray(POD_A)
-POD_MovieFlat = dot(POD_A,ModesFlat)
-POD_Movie = zeros_like(Movie)
-for i in range(Nt):
-    POD_Movie[:,:,i] = reshape(POD_MovieFlat[i],(Ny,Nx))
-    
-#Printing the Decomposed Move    
-ani_frame(POD_Movie,"Result.mp4", "POD-Result")
-#Printing DIfference of the two Movies
-Dif = POD_Movie-Movie
-ani_frame(Dif, "Dif.mp4", "Difference")          
+#Plotting expected vs POD Values
+tt = arange(len(POD_A))*dt 
+plt.plot(tt,POD_A, 'rx', label="POD")
+fyy = lambda t: y0*np.exp(10j*t) 
+yy = (fyy(tt))
+plt.plot(tt,yy, label="Expected (~exp(10it))")
+plt.legend(loc = "upper right")
+plt.show()
