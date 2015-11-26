@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
 #    Initiating TimeValues    
     t0          = 0.0
-    dt          = 0.01
+    dt          = 0.00025
  
 #    Calculating the initail wavefunction psi0 
     x0          = 0
@@ -214,7 +214,7 @@ if __name__ == "__main__":
      
 # Performing the Calculation of the Wavefunction - A will be the DataMatrix - as above this had to bigger in the end
     snapshots = 50
-    betweenSnp = 40
+    betweenSnp = 80
     A           = np.zeros((snapshots,len(psi0.flatten())), dtype=np.complex)
    
     print("Start with Leapfrog")     
@@ -222,6 +222,7 @@ if __name__ == "__main__":
         A[i,:] = s.psi_x.flatten()
         s.snapshot(betweenSnp)
         
+    dt = dt*betweenSnp
 # Calculating the Modes    
     Mpath = "Modes/"
     if not os.path.exists(Mpath):
@@ -229,45 +230,66 @@ if __name__ == "__main__":
     print("Start with SVD")
     Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=10)
     
-# For simplicity and calculating time just taking the first "Cut" Modes
-    Cut = 5
+# For simplicity and calculating time just taking the first "cut" Modes
+# NOTE: if cut>2 ode will NOT converge
+    cut = 2
+    
 # Inserting the same initial Value for the galerkin Eq as above the calculated Wave with leapfrog!
-    y0 = Atemps[0,:Cut]
+    y0 = Atemps[0,:cut]
  
 # Calculating the Laplacian of every POD-Mode   
-    DModes = np.zeros((Cut,Ny,Nx), np.complex)   
-    for i in range(Cut):
+    DModes = np.zeros((cut,Ny,Nx), np.complex)   
+    for i in range(cut):
         DModes[i,:,:] = laplacian(Modes[i,:,:],dx,dy)
         
 # Galerkin Eq function for the ode   
     def fun(t,y):
         """
         returns:        da_k/dt = ∫ Σ_i a_i (Δφ_i / 2 - V φ_i) φ_k* dx (here with hbar=1)
-        the summation of i is performed in the first loop
+        the summation of i is performed in the middle loop
         the integral is performed in the last line before returning alpha
-        alpha in the return is a vektor of length Cut
+        alpha in the return is a vektor of length cut
         """
-        print(t)
-        alpha = np.zeros(Cut, dtype=np.complex) 
-        for k in range(Cut):                
+#        print(t)
+        alpha = np.zeros(cut, dtype=np.complex) 
+        for k in range(cut):                
             temp = np.zeros((Ny,Nx), dtype=np.complex)
             
-            for i in range(Cut):
-                temp   += y[i]*(DModes[i,:,:]*hbar/2-V*Modes[i,:,:]/hbar)  
+            for i in range(cut):
+                temp   += y[i]*(DModes[i,:,:]*hbar/2-V*Modes[i,:,:]/hbar)
                 
             temp = 1j*temp*np.conjugate(Modes[k,:,:])        
             alpha[k] = temp.sum()
         return alpha
     
     solution = []
+    POD_A = []
 # Solving Ode    
     r = ode(fun).set_integrator('zvode', method='bdf', with_jacobian=False)
     r.set_initial_value(y0, t0)
     
-    Tf = 0.1
+    steps = 6
+    Tf = dt*steps
     print("Start with Ode")
     while r.successful() and r.t < Tf:
+        POD_A.append(r.y)
         r.integrate(r.t+dt)
         solution.append([r.t,r.y])
 
-
+#Plottting Values
+    POD_A = np.asarray(POD_A)
+    if cut==1:
+        tt = np.arange(steps)*dt 
+        plt.plot(tt,POD_A, 'rx', label="POD")
+        plt.plot(tt,Atemps[0:steps,0], label="Expected (from SVD)")
+        plt.legend(loc = "upper right")
+        plt.show()
+    elif cut==2:
+        tt = np.arange(steps)*dt 
+        plt.plot(tt,POD_A[:,0], 'rx', label="POD-Mode 1")
+        plt.plot(tt,Atemps[0:steps,0], label="Expected (from SVD) Mode 1")
+        plt.plot(tt,POD_A[:,1], 'gx', label="POD-Mode 2")
+        plt.plot(tt,Atemps[0:steps,1], label="Expected (from SVD) Mode 2")
+        plt.legend(loc = "upper right")
+        plt.show()
+    
