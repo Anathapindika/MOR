@@ -120,6 +120,8 @@ class schrodinger2d(object):
         kx                  = (np.arange(self.Nx) - self.Nx/2) * self.dkx
         ky                  = (np.arange(self.Ny) - self.Ny/2) * self.dky
         self.Kx, self.Ky    = np.meshgrid(kx,ky) 
+        self.Kx     = np.fft.fftshift(self.Kx)
+        self.Ky     = np.fft.fftshift(self.Ky)
 
         self.steps()         
         
@@ -133,9 +135,10 @@ class schrodinger2d(object):
         
         self.evolve_x           = self.evolve_x_half * self.evolve_x_half
         
-        self.evolve_k           = np.exp(-(1j * self.hbar * np.fft.fftshift(self.Kx * self.Kx
+        self.evolve_k           = np.exp(-(1j * self.hbar * (self.Kx * self.Kx
                                 + self.Ky * self.Ky) * self.dt / (2 * self.m)))
                                 
+                            
     def x_to_k(self):
         self.psi_k   = np.fft.fft2(self.psi_x)
         
@@ -183,23 +186,23 @@ if __name__ == "__main__":
 
 #    Initiating TimeValues    
     t0          = 0.0
-    dt          = 0.00025
+    dt          = 0.005
  
 #    Calculating the initail wavefunction psi0 
     x0          = 0
     y0          = 0
-    varx        = 5
-    vary        = 5
+    varx        = 1
+    vary        = 1
     k0x         = 1
-    k0y         = 0
-    Coef        = 2
+    k0y         = 1
+    Coef        = 1
     psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
     
     hbar        = 1
     m           = 1
 #   Initiating the Potential   
     boundary    = 0.7
-    pot         = 10E8   
+    pot         = 10E8  
     V           = potential(X,Y,boundary,pot)
    
  #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
@@ -213,8 +216,8 @@ if __name__ == "__main__":
                                 t0 = t0)
      
 # Performing the Calculation of the Wavefunction - A will be the DataMatrix - as above this had to bigger in the end
-    snapshots = 50
-    betweenSnp = 80
+    snapshots = 20  
+    betweenSnp = 50
     A           = np.zeros((snapshots,len(psi0.flatten())), dtype=np.complex)
    
     print("Start with Leapfrog")     
@@ -223,6 +226,7 @@ if __name__ == "__main__":
         s.snapshot(betweenSnp)
         
     dt = dt*betweenSnp
+
 # Calculating the Modes    
     Mpath = "Modes/"
     if not os.path.exists(Mpath):
@@ -232,7 +236,7 @@ if __name__ == "__main__":
     
 # For simplicity and calculating time just taking the first "cut" Modes
 # NOTE: if cut>2 ode will NOT converge
-    cut = 2
+    cut = 1
     
 # Inserting the same initial Value for the galerkin Eq as above the calculated Wave with leapfrog!
     y0 = Atemps[0,:cut]
@@ -276,20 +280,20 @@ if __name__ == "__main__":
         r.integrate(r.t+dt)
         solution.append([r.t,r.y])
 
-#Plottting Values
-    POD_A = np.asarray(POD_A)
-    if cut==1:
-        tt = np.arange(steps)*dt 
-        plt.plot(tt,POD_A, 'rx', label="POD")
-        plt.plot(tt,Atemps[0:steps,0], label="Expected (from SVD)")
-        plt.legend(loc = "upper right")
-        plt.show()
-    elif cut==2:
-        tt = np.arange(steps)*dt 
-        plt.plot(tt,POD_A[:,0], 'rx', label="POD-Mode 1")
-        plt.plot(tt,Atemps[0:steps,0], label="Expected (from SVD) Mode 1")
-        plt.plot(tt,POD_A[:,1], 'gx', label="POD-Mode 2")
-        plt.plot(tt,Atemps[0:steps,1], label="Expected (from SVD) Mode 2")
-        plt.legend(loc = "upper right")
-        plt.show()
-    
+###Plottting Values
+##    POD_A = np.asarray(POD_A)
+##    if cut==1:
+##        tt = np.arange(steps)*dt 
+##        plt.plot(tt,POD_A, 'rx', label="POD")
+##        plt.plot(tt,Atemps[0:steps,0], label="Expected (from SVD)")
+##        plt.legend(loc = "upper right")
+##        plt.show()
+##    elif cut==2:
+##        tt = np.arange(steps)*dt 
+##        plt.plot(tt,POD_A[:,0], 'rx', label="POD-Mode 1")
+##        plt.plot(tt,Atemps[0:steps,0], label="Expected (from SVD) Mode 1")
+##        plt.plot(tt,POD_A[:,1], 'gx', label="POD-Mode 2")
+##        plt.plot(tt,Atemps[0:steps,1], label="Expected (from SVD) Mode 2")
+##        plt.legend(loc = "upper right")
+##        plt.show()
+##    

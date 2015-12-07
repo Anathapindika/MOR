@@ -50,7 +50,9 @@ class schrodinger2d(object):
         kx                  = (np.arange(self.Nx) - self.Nx/2) * self.dkx
         ky                  = (np.arange(self.Ny) - self.Ny/2) * self.dky
         self.Kx, self.Ky    = np.meshgrid(kx,ky) 
-
+        self.Kx     = np.fft.fftshift(self.Kx)
+        self.Ky     = np.fft.fftshift(self.Ky)
+        
         self.steps()         
         
         self.psi_x    = psi0
@@ -63,7 +65,7 @@ class schrodinger2d(object):
         
         self.evolve_x           = self.evolve_x_half * self.evolve_x_half
         
-        self.evolve_k           = np.exp(-(1j * self.hbar * np.fft.fftshift(self.Kx * self.Kx
+        self.evolve_k           = np.exp(-(1j * self.hbar * (self.Kx * self.Kx
                                 + self.Ky * self.Ky) * self.dt / (2 * self.m)))
                                 
     def x_to_k(self):

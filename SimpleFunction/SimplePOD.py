@@ -61,6 +61,8 @@ def SVD_Modes(A, Nx, Ny, nModes = 10):
             
     Atemps = np.dot(U,Sig)
 
+#    assert(np.allclose(Ap,A))
+    
     return Modes, Atemps
     
 
@@ -69,8 +71,8 @@ psy = lambda t,x,y: exp(10*1j*t)*(x**2+y**2)
 
 #Initiating the Grid and Time Values
 t0 = 0
-tf = 15
-dt = 0.1
+tf = 1
+dt = 0.01
 T = arange(t0,tf,dt)
 x = arange(-5,5,0.1)
 y = arange(-5,5,0.1)
@@ -90,7 +92,7 @@ for t in T:
     frame += 1
     
     
-ani_frame(Movie,"Original.mp4","Versuch")
+#ani_frame(Movie,"Original.mp4","Versuch")
 ModesAll, Atemps = SVD_Modes(A,Nx,Ny,nModes =10)
 
 #Take only the first [cut] Modes - because fast decay
@@ -124,8 +126,8 @@ while r.successful() and r.t < tf:
     POD_A.append(r.y)    
     r.integrate(r.t+dt)
 
+del POD_A[-1]
 
-#Plotting expected vs POD Values
 tt = arange(len(POD_A))*dt 
 plt.plot(tt,POD_A, 'rx', label="POD")
 fyy = lambda t: y0*np.exp(10j*t) 
