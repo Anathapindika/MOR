@@ -54,6 +54,19 @@ for r in range(len(sigVT)):
     norm = f[0,0]**(-0.5)
     VT[r] = norm * sigVT[r]
 
+B = 3
+Phi = zeros(dtype=complex,shape=(B,S))
+Phitld = 0*Phi
+for b in range(B):
+    Phi[b] = array(VT[-1-b])[0]
+    lapl = (Phi[b,:-2] + Phi[b,2:] - 2*Phi[b,1:-1])/(X[1]-X[0])**2
+    Phitld[b,1:-1] = lapl - V[1:-1]*Phi[b,1:-1]
+
+H = zeros(dtype=complex,shape=(B,B))
+for k in range(B):
+    for l in range(B):
+        H[k,l] = np.sum(Phi[k].conj()*Phitld[l])
+print(H)
 
 # Now animate everything!
 
@@ -95,8 +108,8 @@ fig.subplots_adjust(hspace=0.3)
 panelx = fig.add_subplot(211)
 panelx.set_xlabel('position')
 panelx.set_xlim(X[0],X[-1])
-for r in range(1,4):
-    Y = array(VT[-r])[0]
+for b in range(2,3):
+    Y = Phi[b]
     panelx.plot(X,Y.real)
     panelx.plot(X,Y.imag)
 
