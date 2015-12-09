@@ -14,24 +14,24 @@ from pylab import *
 
 
 
-def ani_frame(Array, path, title):
+def ani_frame(X,Array, path, title):
     
     fig = plt.figure()
     fig.suptitle(title)
-    ax = fig.add_subplot(111)
+    ax = plt.axes(xlim=(-4, 4), ylim=(0, 1.5))
+    
     ax.set_aspect('equal')
-    length = shape(Array)[2]
-    im = ax.imshow(Array[:,:,0], animated = True, cmap = "gist_ncar")
-    fig.colorbar(im)
+    length = shape(Array)[1]
+    im, = ax.plot(X,Array[:,0])
     dpi = 100
     
     tight_layout()
 
-
+    print(length)
 
     def update_img(n):
-        tmp = Array[:,:,n]
-        im.set_data(tmp)
+        tmp = Array[:,n]
+        im.set_data(X,tmp)
         return im
 
     ani = animation.FuncAnimation(fig,update_img,length,interval=20)
@@ -55,8 +55,7 @@ def sig_print(Arrays, path):
     
 def print_frame(Array, path):
     fig, ax = plt.subplots()
-    im = plt.imshow(Array, cmap="gist_ncar")
-    fig.colorbar(im, ax=ax)
+    im = plt.plot(Array)
     plt.savefig(path)
     plt.close()
     
