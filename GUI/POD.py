@@ -366,7 +366,7 @@ class Pod(tkinter.Toplevel):
         self.infoW.withdraw()
         progWindow = Toplevel(self)
         progWindow.geometry("200x45+500+500")
-        progWindow.wm_title("Calculating")
+        progWindow.wm_title("Preparing...")
         progWindow.config(background = color)
         progWindow.update_idletasks()
         label = tkinter.Label(progWindow, text = "Calculating", bg=color)

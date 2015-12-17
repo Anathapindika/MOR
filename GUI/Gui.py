@@ -507,7 +507,7 @@ class App_Window(tkinter.Tk):
         self.infoW.withdraw()
         progWindow = Toplevel(self)
         progWindow.geometry("200x45+200+200")
-        progWindow.wm_title("Calculating")
+        progWindow.wm_title("Preparing...")
         progWindow.config(background = color)
         progWindow.update_idletasks()
         label = tkinter.Label(progWindow, text = "Calculating", bg=color)
@@ -521,6 +521,21 @@ class App_Window(tkinter.Tk):
         snapshots = int(self.nSnap.get())
         betweenSnapshots = int(self.btwSnap.get())
         
+        datapath = path + "DataSet/"
+        if not os.path.exists(datapath):
+            os.mkdir(datapath)
+                
+        string = "#Input \t PosX \t PosY \t VarX \t VarY \t MomX \t MomY \t V \n"
+        print(string)
+        file = open((datapath + "Logbook_Input.txt"), "w")
+        file.write(string)
+        
+        for i in self.logbook:
+            string = str(i[0]) + "\t" + str(i[2]) + "\t" + str(i[3]) + "\t" + str(i[4]) 
+            string+= "\t" + str(i[5]) + "\t" + str(i[6]) + "\t" + str(i[7]) + "\t" + str(i[8]) + "\n"
+            file.write(string)
+        file.close()
+
         
         self.A = np.zeros((((self.ninput+1)*snapshots),self.Nx*self.Ny), dtype=np.complex)
         
@@ -535,9 +550,7 @@ class App_Window(tkinter.Tk):
             psy0 = self.inputlist[i][0]
             V = self.inputlist[i][1]
             schrodinger = schrodinger2d(self.X,self.Y,psy0,V, self.Dt)
-            datapath = path + "DataSet/"
-            if not os.path.exists(datapath):
-                os.mkdir(datapath)
+
                 
             for s in range(snapshots):    
                 print(s)
@@ -576,7 +589,7 @@ class App_Window(tkinter.Tk):
         podFrame = Pod(self.Modes, self.sig, path, self.logbook)
         handler = lambda: self.onCloseOtherFrame(podFrame)
         btn = tkinter.Button(podFrame, text="Close", command=handler, width=10, height=2, bg="#e5ecff")
-        btn.place(x=1165, y=5)
+        btn.place(x=1185, y=5)
         
         
     def hide(self):
