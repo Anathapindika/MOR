@@ -23,7 +23,7 @@ def ani_frame(Array, path, title):
     length = shape(Array)[2]
     im = ax.imshow(Array[:,:,0], animated = True, cmap = "gist_ncar")
     fig.colorbar(im)
-    dpi = 100
+    dpi = 150
     
     tight_layout()
 

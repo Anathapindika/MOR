@@ -195,18 +195,20 @@ if __name__ == "__main__":
     y0          = 0
     varx        = 1
     vary        = 1
-    k0x         = 1
-    k0y         = 1
-    Coef        = 1
+    k0x         = 3
+    k0y         = 3
+    Coef        = 1.5
     psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
     
     hbar        = 1
     m           = 1
 #   Initiating the Potential   
     boundary    = 0.7
-    pot         = 10E8  
+    pot         = 10E6  
     V           = potential(X,Y,boundary,pot)
-   
+    V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
+    plt.imshow(V)
+    plt.show()
  #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
     s = schrodinger2d(X = X,
                                 Y = Y,
@@ -218,8 +220,8 @@ if __name__ == "__main__":
                                 t0 = t0)
      
 # Performing the Calculation of the Wavefunction - A will be the DataMatrix - as above this had to bigger in the end
-    snapshots = 20  
-    betweenSnp = 100
+    snapshots = 200  
+    betweenSnp = 50
     A           = np.zeros((snapshots,len(psi0.flatten())), dtype=np.complex)
     Movie1      = np.zeros((Ny,Nx,snapshots))
    
@@ -239,66 +241,94 @@ if __name__ == "__main__":
     print("Start with SVD")
     Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=10)
     
+    
+
 # For simplicity and calculating time just taking the first "cut" Modes
 # NOTE: if cut>2 ode will NOT converge
-    cut = 2
+    for cut in range(10,101,10):
+        cut = 200
+        path = "cut"+str(cut)+"/"
+        if not os.path.exists(path):
+            os.mkdir(path)
+        
+            
+        
+    # Inserting the same initial Value for the galerkin Eq as above the calculated Wave with leapfrog!
+        y0 = Atemps[0,:cut]
+     
+    # Calculating the Laplacian of every POD-Mode   
+        DModes = np.zeros((cut,Ny,Nx), np.complex)   
+        Coef = np.zeros((cut,Ny,Nx), np.complex)   
+            
+        
+        for i in range(cut):
+            DModes[i,:,:] = laplacian(Modes[i,:,:],dx,dy)
+            Coef[i,:,:]   = (DModes[i,:,:]*hbar/(2*m)-V*Modes[i,:,:]/hbar)
+        
+        H = np.zeros((cut,cut), dtype=np.complex)
+        
+        for k in range(cut):
+            for l in range(cut):
+                H[k,l] = (np.conjugate(Modes[k])*Coef[l]).sum()
+         
+#        print("H Matrix is Hermitian: ")       
+#        print((np.allclose(H,conjugate(H.T))))
+    #    print(H)
+        
+    # Galerkin Eq function for the ode   
+        def fun(t,y):
+            """
+            returns:        da_k/dt =  Σ_i a_i H[k,i] (here with hbar=1)
+            the summation of i is performed in the middle loop
+            the integral is performed in the last line before returning alpha
+            alpha in the return is a vektor of length cut
+            """
     
-# Inserting the same initial Value for the galerkin Eq as above the calculated Wave with leapfrog!
-    y0 = Atemps[0,:cut]
- 
-# Calculating the Laplacian of every POD-Mode   
-    DModes = np.zeros((cut,Ny,Nx), np.complex)   
-    Coef = np.zeros((cut,Ny,Nx), np.complex)   
+            alpha = np.zeros(cut, dtype=np.complex) 
+            
+            for k in range(cut):                
+                temp = 0+0j
+                for i in range(cut):
+                    temp   += y[i]*H[k,i]
+                    
+                alpha[k] = 1j*temp
+            return alpha
+        
+        solution = []
+        POD_A = []
+    # Solving Ode    
+        r = ode(fun).set_integrator('zvode', method='bdf', with_jacobian=False)
+        r.set_initial_value(y0, t0)
+        
+        steps = snapshots
+        Tf = dt*steps
+        print("Start with Galerkin Ode")
+        while r.successful() and r.t < Tf:
+            POD_A.append(r.y)
+            r.integrate(r.t+dt)
+            solution.append([r.t,r.y])
+        
+        print("Done with Galerkin Ode")
+    #    POD_Atemps = np.zeros((snapshots,cut), dtype=np.complex)
+        
+        ModesFlat = np.zeros((cut,Nx*Ny), dtype=np.complex)
+        for i in range(cut):
+            ModesFlat[i] = Modes[i].flatten()
         
     
-    for i in range(cut):
-        DModes[i,:,:] = laplacian(Modes[i,:,:],dx,dy)
-        Coef[i,:,:]   = (DModes[i,:,:]*hbar/2-V*Modes[i,:,:]/hbar)
-    
-    H = np.zeros((cut,cut), dtype=np.complex)
-    for k in range(cut):
-        for l in range(cut):
-            H[k,l] = (np.conjugate(Modes[k])*Coef[l]).sum()
-            
-    assert(np.allclose(H,conjugate(H.T)))
-    print(H)
-    
-# Galerkin Eq function for the ode   
-    def fun(t,y):
-        """
-        returns:        da_k/dt =  Σ_i a_i H[k,i] (here with hbar=1)
-        the summation of i is performed in the middle loop
-        the integral is performed in the last line before returning alpha
-        alpha in the return is a vektor of length cut
-        """
-        print(t)
-        alpha = np.zeros(cut, dtype=np.complex) 
-        for k in range(cut):                
-            temp = 0+0j
-            
-            for i in range(cut):
-                temp   += y[i]*H[k,i]
-                
-            alpha[k] = 1j*temp
-        return alpha
-    
-    solution = []
-    POD_A = []
-# Solving Ode    
-    r = ode(fun).set_integrator('zvode', method='bdf', with_jacobian=False)
-    r.set_initial_value(y0, t0)
-    
-    steps = 10
-    Tf = dt*steps
-    print("Start with Ode")
-    while r.successful() and r.t < Tf:
-        POD_A.append(r.y)
-        r.integrate(r.t+dt)
-        solution.append([r.t,r.y])
-    
-    for i in range(cut):
-        ModesFlat = Modes[i].flatten()
+        Ap = np.dot(POD_A,ModesFlat)
+        Movie2 = np.zeros_like(Movie1)
+        Movie3 = np.zeros_like(Movie1)
+        for i in range(snapshots):
+            psi           = np.reshape(Ap[i,:],(Ny,Nx))
+            Movie2[:,:,i] = abs(psi*psi)
+        ani_frame(Movie2,path+"POD.mp4", "POD_with"+str(cut))
+        ani_frame(Movie2-Movie1,path+"Difference.mp4", "difference_with"+str(cut))  
         
+        for i in range(snapshots):
+            Movie3[:,:,i] = (Movie1[:,:,i] - Movie2[:,:,i])/Movie2[:,:,i]
+        ani_frame(Movie3, path+"Error.mp4", path+"error_with"+str(cut))
+      
 #    Movie2 = 
 #    ani_frame(Movie1,"leapfrog.mp4","leapfrog")
 ###Plottting Values

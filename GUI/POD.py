@@ -40,6 +40,7 @@ class Pod(tkinter.Toplevel):
         self.layout()
         self.menues()   
         self.randomInput()
+        self.potBox()
         
     def menues(self):
 #        self.menu = tkinter.Menu(self, bg= color, activebackground=color,)
