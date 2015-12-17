@@ -95,7 +95,7 @@ class schrodinger2d(object):
         self.t      += self.dt*Steps
     
     
-def SVD_Modes(A, Mpath, Nx, Ny, PlotModes = True, nModes = 100):
+def SVD_Modes(A, Nx, Ny):
     
 
     At      = np.conjugate(A.T)   
@@ -106,10 +106,6 @@ def SVD_Modes(A, Mpath, Nx, Ny, PlotModes = True, nModes = 100):
     sig     = sqrt(sig)
     sig     = sig[sorter]
     U       = U[:,sorter]
-
-
-    path = Mpath + "sig.jpg"
-    i = sig_print(sig,path)
     
     Ut      = np.conjugate(U.T)
     Sig     = diag(sig)
@@ -122,19 +118,10 @@ def SVD_Modes(A, Mpath, Nx, Ny, PlotModes = True, nModes = 100):
         V[i,:] = UtA[i,:]/linalg.norm(UtA[i,:])
         Modes[i,:,:] = np.reshape(V[i,:],(Ny,Nx))
    
-
-    if PlotModes:        
-        Mpath = Mpath + "Modes/"
-        if not os.path.exists(Mpath):
-            os.mkdir(Mpath)
-        
-        for i in range(nModes):
-            imtemp = np.real(Modes[i,:,:])
-            print_frame(imtemp,Mpath+"mode_"+str(i)+".png")
             
     Atemps = np.dot(U,Sig)
 
-    return Modes, Atemps
+    return Modes, Atemps, sig
     
 def potential(X, Y, boundary, pot):
     

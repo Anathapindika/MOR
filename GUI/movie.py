@@ -15,7 +15,7 @@ from pylab import *
 
 
 def ani_frame(Array, path, title):
-    
+
     fig = plt.figure()
     fig.suptitle(title)
     ax = fig.add_subplot(111)
@@ -23,7 +23,7 @@ def ani_frame(Array, path, title):
     length = shape(Array)[2]
     im = ax.imshow(Array[:,:,0], animated = True, cmap = "gist_ncar")
     fig.colorbar(im)
-    dpi = 100
+    dpi = 150
     
     tight_layout()
 
@@ -35,11 +35,10 @@ def ani_frame(Array, path, title):
         return im
 
     ani = animation.FuncAnimation(fig,update_img,length,interval=20)
-    plt.show()
-#    writer = animation.writers['ffmpeg'](fps=10)
-#
-#    ani.save(path,writer=writer,dpi=dpi)
-#    print("done with movie")
+    writer = animation.writers['ffmpeg'](fps=6)
+
+    ani.save(path,writer=writer,dpi=dpi)
+    print("done with movie")
     plt.close()
 
 
