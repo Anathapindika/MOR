@@ -8,14 +8,13 @@ Created on Mon Dec 14 20:20:19 2015
 import matplotlib
 matplotlib.use('TKAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-from matplotlib import animation
 import tkinter
 from tkinter import *
 from tkinter.ttk import *
 import numpy as np
 from utilities import*
 from scipy.integrate import ode
-from time import strftime 
+from movie import*
 
 class Pod(tkinter.Toplevel):
     
@@ -40,25 +39,9 @@ class Pod(tkinter.Toplevel):
         self.layout()
         self.menues()   
         self.randomInput()
-        self.potBox()
+        self.potchange("Box")
         
-    def menues(self):
-#        self.menu = tkinter.Menu(self, bg= color, activebackground=color,)
-#
-##        self.menu.config(bg = color)
-#        
-#        #Potential
-#        self.subMenuPot = tkinter.Menu(self.menu, bg=color)
-#        self.menu.add_cascade(label="Potential", menu=self.subMenuPot)
-#        self.subMenuPot.add_command(label="Box", command=self.potBox) 
-#        self.subMenuPot.add_command(label="Circle", command=self.potCircle) 
-#        
-#        self.subMenuLog = tkinter.Menu(self.menu)
-#        self.menu.add_cascade(label="LogBook", menu=self.subMenuLog)
-#        
-#        for i in self.logbook:
-#            self.subMenuLog.add_command(label = str(i[0]) + "th Input", command=lambda: self.logEntry(i))
-                
+    def menues(self):                
         self.potVar     = tkinter.StringVar(self)
         self.potVar.set("Box")
         potentials = ["Box", "Circle"]
@@ -83,12 +66,22 @@ class Pod(tkinter.Toplevel):
         
         
     def potchange(self, var):
+        X = self.X
+        Y = self.Y
         
         if var=="Box":
-            self.potBox()
-            self.potMenue.c
+            self.V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
+            self.strPot = "BoxPotential"
         elif var=="Circle":
-            self.potCircle()
+            self.V  = np.sqrt((X*X)**2+(Y*Y)**2)
+            self.strPot = "CirclePotential"
+        
+        vimOld = self.Vim
+        self.Vim = self.V/(np.amax(self.V))
+        self.impod.set_data(self.Vim+self.impod.get_array()-vimOld)
+        self.canvaspod.show()
+        self.update()
+             
         
     def layout(self):
         
@@ -142,43 +135,6 @@ class Pod(tkinter.Toplevel):
         tkinter.Label(self,text = "MomY", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=30, x=225)
         self.momY = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
         self.momY.place(y=30, x=270)
-
-        
-#        tkinter.Label(self,text = "PosX", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=5, x=50)
-#        self.posX = tkinter.Entry(self, width = 5, bg=bLabel, fg=fLabel)
-#        rnd = round(np.random.rand()+np.random.randint(-5,5),2)
-#        self.posX.insert(END, rnd)
-#        self.posX.place(y=5, x=94)
-#        
-#        tkinter.Label(self, text = "VarX", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=30, x=50)
-#        self.varX = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
-#        rnd = round(np.random.rand()+np.random.randint(3),2)
-#        self.varX.insert(END,rnd)
-#        self.varX.place(y=30, x=94)
-#        
-#        tkinter.Label(self,text = "PosY", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=5, x=130)
-#        self.posY = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
-#        rnd = round(np.random.rand()+np.random.randint(-5,5),2)
-#        self.posY.insert(END,rnd)
-#        self.posY.place(y=5, x=175)
-#        
-#        tkinter.Label(self,text = "VarY", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=30, x=130)
-#        self.varY = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
-#        rnd = round(np.random.rand()+np.random.randint(3),2)
-#        self.varY.insert(END,rnd)
-#        self.varY.place(y=30, x=175)
-#        
-#        tkinter.Label(self,text = "MomX", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=5, x=210)
-#        self.momX = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
-#        rnd = round(np.random.rand()+np.random.randint(-5,5),2)
-#        self.momX.insert(END,rnd)
-#        self.momX.place(y=5, x=260)
-#        
-#        tkinter.Label(self,text = "MomY", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=30, x=210)
-#        self.momY = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
-#        rnd = round(np.random.rand()+np.random.randint(-5,5),2)
-#        self.momY.insert(END,rnd)
-#        self.momY.place(y=30, x=260)
         
         tkinter.Label(self,text = "How\n many\n Modes", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=3, x=305)
         self.nModes = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 3)
@@ -188,8 +144,7 @@ class Pod(tkinter.Toplevel):
         
         button1 = tkinter.Button(self,text="Apply", bg=bLabel, fg=fLabel,command=self.applyPsy0, width=7, height=2)
         button1.place(x=560, y=5)  
-        
-        
+             
         button5 = tkinter.Button(self,text="Show Sigma", bg=bLabel, fg=fLabel,command=self.showSig, width=10, height=2)
         button5.place(x=730, y=5) 
         
@@ -197,10 +152,7 @@ class Pod(tkinter.Toplevel):
         button5.place(x=820, y=5)
         self.mode = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
         self.mode.place(x=910, y=15)
-        
-
- 
-         
+          
         button4 = tkinter.Button(self,text="Calculate", bg="#d3ddf9", fg=fLabel,command=self.calculate, width=9, height=2)
         button4.place(x=640, y=5)
         
@@ -235,34 +187,6 @@ class Pod(tkinter.Toplevel):
         fLabel = "black"
         fontLabel = ('Cambria', 9)
         
-    def potBox(self):
-        Nx = self.Nx
-        Ny = self.Ny
-        dx = self.Dx
-        dy = self.Dy
-        x   =(np.arange(Nx)-Nx/2)*dx
-        y   =(np.arange(Ny)-Ny/2)*dy
-        X,Y = np.meshgrid(x,y)
-        self.V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
-#        self.V = potential(self.X,self.Y,0.7,1E6)
-        self.Vim = self.V/(np.amax(self.V))
-        self.impod.set_data(self.Vim+self.impod.get_array())
-        self.canvaspod.show()
-        self.update()
-        
-    def potCircle(self):
-        Nx = self.Nx
-        Ny = self.Ny
-        dx = self.Dx
-        dy = self.Dy
-        x   =(np.arange(Nx)-Nx/2)*dx
-        y   =(np.arange(Ny)-Ny/2)*dy
-        X,Y = np.meshgrid(x,y)
-        self.V  = np.sqrt((X*X)**2+(Y*Y)**2)
-        self.Vim = self.V/(np.amax(self.V))
-        self.impod.set_data(self.Vim+self.impod.get_array())
-        self.canvaspod.show()
-        self.update()
 
     def closeWindow(self,w):
         w.destroy()
@@ -427,13 +351,13 @@ class Pod(tkinter.Toplevel):
         label1.grid()
         
         self.nSnap = tkinter.Entry(self.infoW, width=10, justify=LEFT)
-        self.nSnap.insert(END, 20)
+        self.nSnap.insert(END, 40)
         self.nSnap.grid(row = 0, column = 1)
         
         label1 = tkinter.Label(self.infoW, compound = LEFT, text = "Time between a Snapshot", bg=color)
         label1.grid(row = 1)
         self.btwSnap = tkinter.Entry(self.infoW, width=10, justify=LEFT)
-        self.btwSnap.insert(END, 20)
+        self.btwSnap.insert(END, 5)
         self.btwSnap.grid(row = 1, column = 1)
         tkinter.Button(self.infoW, text="Apply", command=self.calculate2, bg=color).grid(row=3, column=1, sticky=E)
         

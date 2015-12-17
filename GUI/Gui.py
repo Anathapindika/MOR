@@ -10,6 +10,7 @@ import numpy as np
 from utilities import*
 from POD import*
 from time import strftime 
+from movie import*
 
 
 
@@ -43,19 +44,28 @@ class App_Window(tkinter.Tk):
         self.config(menu=self.menu, bg=color)
         
         #Dimension
-        self.subMenuConfig = tkinter.Menu(self.menu, bg=color)
-        self.menu.add_cascade(label="Edit", menu=self.subMenuConfig)
-        self.subMenuConfig.add_command(label = "Configure", command=self.configer)
+#        self.subMenuConfig = tkinter.Menu(self.menu, bg=color)
+#        self.menu.add_cascade(label="Edit", menu=self.subMenuConfig)
+#        self.subMenuConfig.add_command(label = "Configure", command=self.configer)
 
         
     def potchange(self, var):
+        X = self.X
+        Y = self.Y
         
         if var=="Box":
-            self.potBox()
+            self.V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
+            self.strPot = "BoxPotential"
         elif var=="Circle":
-            self.potCircle()
+            self.V  = np.sqrt((X*X)**2+(Y*Y)**2)
+            self.strPot = "CirclePotential"
         
-        
+        vimOld = self.Vim
+        self.Vim = self.V/(np.amax(self.V))
+        self.im.set_data(self.Vim+self.im.get_array()-vimOld)
+        self.canvas.show()
+        self.update()
+             
         
     def layout(self):
         self.fig = matplotlib.figure.Figure(figsize=(4,4),dpi=140, facecolor="#ecf2f9")
@@ -117,7 +127,7 @@ class App_Window(tkinter.Tk):
         button4.place(x=670, y=5)
         
 
-        self.potBox()
+        self.potchange("Box")
         self.resizable(False,False)
         self.update()
                 
@@ -159,38 +169,6 @@ class App_Window(tkinter.Tk):
         bcolor = color
         bButton = "#ecf2f9"
         fontLabel = ('Cambria', 9)
-        
-    def potBox(self):
-        Nx = self.Nx
-        Ny = self.Ny
-        dx = self.Dx
-        dy = self.Dy
-        x   =(np.arange(Nx)-Nx/2)*dx
-        y   =(np.arange(Ny)-Ny/2)*dy
-        X,Y = np.meshgrid(x,y)
-        self.V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
-#        self.V = potential(self.X,self.Y,0.7,1E6)
-        self.Vim = self.V/(np.amax(self.V))
-        self.im.set_data(self.Vim+self.im.get_array())
-        self.strPot = "BoxPotential"
-        self.canvas.show()
-        self.update()
-        
-    def potCircle(self):
-        Nx = self.Nx
-        Ny = self.Ny
-        dx = self.Dx
-        dy = self.Dy
-        x   =(np.arange(Nx)-Nx/2)*dx
-        y   =(np.arange(Ny)-Ny/2)*dy
-        X,Y = np.meshgrid(x,y)
-        self.V  = np.sqrt((X*X)**2+(Y*Y)**2)
-#        self.V = potential(self.X,self.Y,0.7,1E6)
-        self.Vim = self.V/(np.amax(self.V))
-        self.im.set_data(self.Vim+self.im.get_array())
-        self.strPot = "CirclePotential"
-        self.canvas.show()
-        self.update()
         
     def configer(self):
         edit = Toplevel(self)
@@ -335,8 +313,7 @@ class App_Window(tkinter.Tk):
             self.canvas._tkcanvas.grid(row=4)
             self.resizable(False,False)
             self.update()
-            
-   
+              
              
     def refreshFigure(self,x,y):
         self.line1.set_data(x,y)
@@ -345,8 +322,6 @@ class App_Window(tkinter.Tk):
         ax.set_ylim(y.min(), y.max())        
         self.canvas.draw()
         
-    def changePot(index, value, op):
-        print("HELLO")
         
     def randomInput(self):
         self.posX.delete(0,END)
@@ -432,8 +407,6 @@ class App_Window(tkinter.Tk):
             self.buttonTest["text"] = "Test"
             self.applyPsy0()
             
-        X = self.X/2
-        Y = self.Y/2
 
         s = schrodinger2d(self.X,self.Y,self.psy0,self.V, self.Dt)
         
@@ -507,13 +480,13 @@ class App_Window(tkinter.Tk):
         label1.grid()
         
         self.nSnap = tkinter.Entry(self.infoW, width=10, justify=LEFT)
-        self.nSnap.insert(END, 20)
+        self.nSnap.insert(END, 40)
         self.nSnap.grid(row = 0, column = 1)
         
         label1 = tkinter.Label(self.infoW, compound = LEFT, text = "Time between a Snapshot", bg=color)
         label1.grid(row = 1)
         self.btwSnap = tkinter.Entry(self.infoW, width=10, justify=LEFT)
-        self.btwSnap.insert(END, 20)
+        self.btwSnap.insert(END, 5)
         self.btwSnap.grid(row = 1, column = 1)
         
         label1 = tkinter.Label(self.infoW, compound = LEFT, text = "Create Movie from the Input", bg=color)
