@@ -75,6 +75,7 @@ class Pod(tkinter.Toplevel):
         elif var=="Circle":
             self.V  = np.sqrt((X*X)**2+(Y*Y)**2)
             self.strPot = "CirclePotential"
+            
         
         vimOld = self.Vim
         self.Vim = self.V/(np.amax(self.V))
@@ -259,6 +260,7 @@ class Pod(tkinter.Toplevel):
         self.momY.delete(0,END)
         self.momY.insert(END,k0y)
         self.V = log[1]
+        self.potVar.set(str(strPot))
         
         self.psy0 = gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
         psy = abs(self.psy0*self.psy0)
@@ -366,10 +368,10 @@ class Pod(tkinter.Toplevel):
         self.infoW.withdraw()
         progWindow = Toplevel(self)
         progWindow.geometry("200x45+500+500")
-        progWindow.wm_title("Preparing...")
+        progWindow.wm_title("Calculating")
         progWindow.config(background = color)
         progWindow.update_idletasks()
-        label = tkinter.Label(progWindow, text = "Calculating", bg=color)
+        label = tkinter.Label(progWindow, text = "Preparing...", bg=color)
         label.pack()
         label.update_idletasks()
         bar = Progressbar(progWindow)
@@ -396,6 +398,19 @@ class Pod(tkinter.Toplevel):
         k0x  = float(self.momX.get())
         k0y  = float(self.momY.get())
         Modes = self.Modes
+
+        string = "PosX \tPosY \tVarX \tVarY \tMomX \tMomY \tV \t#Modes \n"
+        print(string)
+        file = open((evalpath + "Logbook.txt"), "w")
+        file.write(string)
+        
+
+        string =str(PosX) + "\t" + str(PosY) + "\t" + str(VarX) + "\t" + str(VarY) 
+        string+= "\t" + str(k0x) + "\t" + str(k0y) + "\t" + str(self.strPot) + "\t" + str(nModes) + "\n"
+        file.write(string)
+        file.close()
+        
+        
         V = self.V
         Nx = self.Nx
         Ny = self.Ny

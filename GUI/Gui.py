@@ -55,10 +55,10 @@ class App_Window(tkinter.Tk):
         
         if var=="Box":
             self.V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
-            self.strPot = "BoxPotential"
+            self.strPot = "Box"
         elif var=="Circle":
             self.V  = np.sqrt((X*X)**2+(Y*Y)**2)
-            self.strPot = "CirclePotential"
+            self.strPot = "Circle"
         
         vimOld = self.Vim
         self.Vim = self.V/(np.amax(self.V))
@@ -120,7 +120,7 @@ class App_Window(tkinter.Tk):
         self.buttonTest = tkinter.Button(self,text="Test",command=self.tester, width=7, height=2, bg=bcolor)
         self.buttonTest.place(x=530, y=5) 
         
-        button3 = tkinter.Button(self,text="NewInput",command=self.onButton1Click, width=7, height=2, bg=bcolor)
+        button3 = tkinter.Button(self,text="NewInput",command=self.newInput, width=7, height=2, bg=bcolor)
         button3.place(x=600, y=5)
         
         button4 = tkinter.Button(self,text="Calculate",command=self.calculate, width=7, height=2, bg=bcolor)
@@ -426,8 +426,8 @@ class App_Window(tkinter.Tk):
                               interval=25, blit=True)
         
     
-    def onButton1Click(self):
-        
+    def newInput(self):
+        self.applyPsy0()
         self.fig1 = matplotlib.figure.Figure(figsize=(4.7,4.7),dpi=20, facecolor="#ecf2f9")
         self.FigSubPlot1 = self.fig1.add_subplot(111)
         self.FigSubPlot1.axes.get_xaxis().set_visible(False)
@@ -525,8 +525,7 @@ class App_Window(tkinter.Tk):
         if not os.path.exists(datapath):
             os.mkdir(datapath)
                 
-        string = "#Input \t PosX \t PosY \t VarX \t VarY \t MomX \t MomY \t V \n"
-        print(string)
+        string = "#Input \tPosX \tPosY \tVarX \tVarY \tMomX \tMomY \tV \n"
         file = open((datapath + "Logbook_Input.txt"), "w")
         file.write(string)
         
