@@ -28,6 +28,20 @@ class Pod(tkinter.Toplevel):
         self.evaluation = 0
         color = "#e5ecff"
         path = path_input
+        self.particles = []
+        self.nparticle = 0
+        self.particlecount = 0
+        
+        for particle in logbook[0][3]:
+            self.particlecount += 1
+            PosX = particle[0]
+            PosY = particle[1]
+            VarX = particle[2]
+            VarY = particle[3]
+            k0x  = particle[4]
+            k0y  = particle[5]
+            self.particles.append([PosX,PosY,VarX,VarY,k0x,k0y])
+        
         self.config(background = color)
         self.wm_title("Evaluating Pod")
         self.geometry("1300x720+100+100")
@@ -35,10 +49,10 @@ class Pod(tkinter.Toplevel):
 
     
     def initialize(self):
-        self.important_values()     
-        self.layout()
-        self.menues()   
-        self.randomInput()
+        self.important_values()  
+        self.menues()    
+        self.layout()  
+#        self.logentry(0)
         self.potchange("Box")
         
     def menues(self):                
@@ -97,6 +111,10 @@ class Pod(tkinter.Toplevel):
         self.canvaspod.get_tk_widget().place(y=50,x=0)
         self.canvaspod.get_tk_widget().configure(background=color, highlightcolor=color, highlightbackground=color)
         self.canvaspod._tkcanvas.place(y=50,x=0)
+        self.canvaspod.mpl_connect('button_press_event', self.on_click)
+        self.canvaspod.mpl_connect("motion_notify_event",self.on_motion)
+        self.canvaspod.mpl_connect("button_release_event", self.on_release)
+        self.canvaspod.mpl_connect("key_press_event", self.key_press)
         self.resizable(True,True)
         self.update()
         
@@ -137,11 +155,14 @@ class Pod(tkinter.Toplevel):
         self.momY = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 5)
         self.momY.place(y=30, x=270)
         
-        tkinter.Label(self,text = "How\n many\n Modes", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=3, x=305)
-        self.nModes = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 3)
-        rnd = np.random.randint(1,10)
-        self.nModes.insert(END,rnd)
-        self.nModes.place(y=17, x=355)
+#        tkinter.Label(self,text = "How\n many\n Modes", bg=bLabel, fg=fLabel, font=fontLabel, width=6).place(y=3, x=305)
+#        self.nModes = tkinter.Entry(self, bg=bLabel, fg=fLabel, width = 3)
+#        rnd = np.random.randint(1,10)
+#        self.nModes.insert(END,rnd)
+#        self.nModes.place(y=17, x=355)
+        
+        button0 = tkinter.Button(self,text="Add Particle", bg=bLabel, fg=fLabel,command=self.addParticle, width=7, height=2)
+        button0.place(x=315, y=5)  
         
         button1 = tkinter.Button(self,text="Apply", bg=bLabel, fg=fLabel,command=self.applyPsy0, width=7, height=2)
         button1.place(x=560, y=5)  
@@ -173,13 +194,40 @@ class Pod(tkinter.Toplevel):
         y   =(np.arange(self.Ny)-self.Ny/2)*self.Dy
         self.running = False
         self.X, self.Y = np.meshgrid(x,y)
+        self.psy0 = gaussian2d(self.X, self.Y, 1, 1, 1, 1, 1, 1, 1)
         self.Vim = np.zeros_like(self.X)
         self.V = None
-        self.goodapply = False
-        self.arrowexist = False
+        self.arrowcount = 0
+        self.arrows = []
         self.ninput = 0
         self.inputlist = []
         self.fontTitle = ('Cambria', 19)
+
+        self.goodapply = False
+        self.manual = False
+        
+        self.changeVarXBool = False
+        self.changeVarYBool = False
+        self.changePosBool = False
+        self.changeMomBool = False
+        
+
+
+        self.arrowX = matplotlib.text.Annotation('', fontsize=1, xy=(0, 0),
+                                    xytext=(1,1), 
+                                    arrowprops=dict(arrowstyle="<-",
+                                                    linewidth = 1.,
+                                                    alpha =0,
+                                                    color = 'orange')
+                                                    )
+        self.arrowY =  matplotlib.text.Annotation('', fontsize=1, xy=(0, 0),
+                                    xytext=(1,1), 
+                                    arrowprops=dict(arrowstyle="<-",
+                                                    linewidth = 1.,
+                                                    alpha =0,
+                                                    color = 'orange')
+                                                    )
+                                                    
         
         global bLabel, bButton, fLabel, fButton, fontLabel, fontButton
         color = "#e5ecff"
@@ -214,22 +262,27 @@ class Pod(tkinter.Toplevel):
             k0y  = float(self.momY.get())
             
             if self.goodapply:
+                self.particles = []
+                self.particles.append([PosX, PosY, VarX, VarY, k0x, k0y])
                 self.psy0 = gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
                 psy = abs(self.psy0*self.psy0)
                 self.impod.set_data(psy+self.Vim)
-                if self.arrowexist:
-                    self.arrow.remove()
+                if self.arrowcount:
+                    for arrow in self.arrows:
+                        arrow.remove()
+                    self.arrows = []
+                    self.arrowcount = 0
                     
-                self.arrow = matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
+                self.arrows.append(matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
                                     xytext=(PosX+k0x,PosY+k0y), 
                                     arrowprops=dict(arrowstyle="<-",
                                                     linewidth = 1.,
                                                     alpha =0.8,
-                                                    color = 'blue')
-                                                    )
-                self.arrowexist = True
+                                                    color = 'orange')
+                                                    ))
+                self.arrowcount += 1
                                                     
-                self.figpodSubPlot.add_artist(self.arrow)
+                self.figpodSubPlot.add_artist(self.arrows[0])
                 self.canvaspod.show()
                 self.update()
         
@@ -239,49 +292,349 @@ class Pod(tkinter.Toplevel):
     def logentry(self, var):
         entry = int(var[0])
         log   = self.logbook[entry]
-        PosX = log[2]
-        PosY = log[3]
-        VarX = log[4]
-        VarY = log[5]
-        k0x  = log[6]
-        k0y  = log[7]
-        strPot = log[8]
+        self.particles = []
+        self.particlecount = 0
+        self.psy0 = 0*self.psy0
+        psy = 0*abs(self.psy0*self.psy0)
         
-        self.posX.delete(0,END)
-        self.posX.insert(END,PosX)
-        self.posY.delete(0,END)
-        self.posY.insert(END,PosY)
-        self.varX.delete(0,END)
-        self.varX.insert(END,VarX)
-        self.varY.delete(0,END)
-        self.varY.insert(END,VarY)        
-        self.momX.delete(0,END)
-        self.momX.insert(END,k0x)
-        self.momY.delete(0,END)
-        self.momY.insert(END,k0y)
-        self.V = log[1]
-        self.potVar.set(str(strPot))
+        for arrow in self.arrows:
+            arrow.set_visible(False)
+        self.arrows = []
         
-        self.psy0 = gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
-        psy = abs(self.psy0*self.psy0)
-        self.impod.set_data(psy+self.Vim)
-        if self.arrowexist:
-            self.arrow.remove()
-            
-        self.arrow = matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
-                            xytext=(PosX+k0x,PosY+k0y), 
-                            arrowprops=dict(arrowstyle="<-",
-                                            linewidth = 1.,
-                                            alpha =0.8,
-                                            color = 'blue')
-                                            )
-        self.arrowexist = True
+        for particle in log[3]:
+            self.particlecount += 1
+            PosX = particle[0]
+            PosY = particle[1]
+            VarX = particle[2]
+            VarY = particle[3]
+            k0x  = particle[4]
+            k0y  = particle[5]
+            self.particles.append([PosX,PosY,VarX,VarY,k0x,k0y])
+            self.psy0 += gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
+            psy       += abs(self.psy0*self.psy0)
+
+            self.arrows.append(matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
+                    xytext=(PosX+k0x,PosY+k0y), 
+                    arrowprops=dict(arrowstyle="<-",
+                                    linewidth = 1.,
+                                    alpha =0.8,
+                                    color = 'orange')
+                                    )
+                            )
+
+
+        self.impod.set_data(psy+self.Vim)  
+        for arrow in self.arrows:
+            self.figpodSubPlot.add_artist(arrow)
                                             
-        self.figpodSubPlot.add_artist(self.arrow)
-        self.potchange(strPot)
         self.canvaspod.show()
         self.update()
 
+            
+#            
+#            
+#        strPot = log[2]
+#        
+#        self.posX.delete(0,END)
+#        self.posX.insert(END,PosX)
+#        self.posY.delete(0,END)
+#        self.posY.insert(END,PosY)
+#        self.varX.delete(0,END)
+#        self.varX.insert(END,VarX)
+#        self.varY.delete(0,END)
+#        self.varY.insert(END,VarY)        
+#        self.momX.delete(0,END)
+#        self.momX.insert(END,k0x)
+#        self.momY.delete(0,END)
+#        self.momY.insert(END,k0y)
+#        self.V = log[1]
+#        self.potVar.set(str(strPot))
+#        
+#        self.psy0 = gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
+#        psy = abs(self.psy0*self.psy0)
+#        self.impod.set_data(psy+self.Vim)
+#        for arrow in self.arrows:
+#            
+#        if self.arrowexist:
+#            self.arrow.remove()
+#            
+#        self.arrow = matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
+#                            xytext=(PosX+k0x,PosY+k0y), 
+#                            arrowprops=dict(arrowstyle="<-",
+#                                            linewidth = 1.,
+#                                            alpha =0.8,
+#                                            color = 'blue')
+#                                            )
+#        self.arrowexist = True
+#                                            
+#        self.figpodSubPlot.add_artist(self.arrow)
+#        self.potchange(strPot)
+#        self.canvaspod.show()
+#        self.update()
+        
+    def addParticle(self):
+        self.goodapply = True
+        
+        self.arrowY.set_visible(False)
+        self.arrowX.set_visible(False)
+        try:
+            PosX = float(self.posX.get())
+            PosY = float(self.posY.get())
+            VarX = float(self.varX.get())
+            VarY = float(self.varY.get())
+            k0x  = float(self.momX.get())
+            k0y  = float(self.momY.get())
+            
+            if self.goodapply:
+                self.particles.append([PosX, PosY, VarX, VarY, k0x, k0y])
+                self.psy0 += gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
+                psy = abs(self.psy0*self.psy0)
+                self.im.set_data(psy+self.Vim)
+#                    if self.arrowcount:
+#                        self.arrow.remove()
+                    
+                self.arrows.append(matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
+                                    xytext=(PosX+k0x,PosY+k0y), 
+                                    arrowprops=dict(arrowstyle="<-",
+                                                    linewidth = 1.,
+                                                    alpha =0.8,
+                                                    color = 'orange')
+                                                    )
+                                            )
+                
+                self.figpodSubPlot.add_artist(self.arrows[self.arrowcount])
+                self.arrowcount += 1
+                                                    
+                self.canvaspod.show()
+                self.update()
+        
+        except ValueError:
+            self.badInput()
+        
+    def rebuildParticles(self):
+        
+        self.psy0 = 0*self.psy0  
+        psy = 0
+        for arrow in self.arrows:
+            arrow.set_visible(False)
+        self.arrows = []
+        for particle in self.particles:
+            PosX = particle[0]
+            PosY = particle[1]
+            VarX = particle[2]
+            VarY = particle[3]
+            k0x  = particle[4]
+            k0y  = particle[5]
+            
+            self.psy0 += gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
+            psy       += abs(self.psy0*self.psy0)
+
+            self.arrows.append(matplotlib.text.Annotation('', fontsize=20, xy=(PosX, PosY),
+                    xytext=(PosX+k0x,PosY+k0y), 
+                    arrowprops=dict(arrowstyle="<-",
+                                    linewidth = 1.,
+                                    alpha =0.8,
+                                    color = 'orange')
+                                    )
+                            )
+
+
+        self.impod.set_data(psy+self.Vim)  
+        for arrow in self.arrows:
+            self.figpodSubPlot.add_artist(arrow)
+                                            
+        self.canvaspod.show()
+        self.update()
+        
+    def key_press(self,event):
+        if event.key == "delete" and self.manual:
+            del self.particles[self.nparticle]
+            self.particlecount -= 1
+            self.arrowY.set_visible(False)
+            self.arrowX.set_visible(False)
+            self.nparticle = 0
+            self.manual = False
+            self.rebuildParticles()
+        
+        
+    def on_click(self,event):
+
+        if event.dblclick:
+            xc = event.xdata
+            yc = event.ydata
+            self.arrowY.set_visible(False)
+            self.arrowX.set_visible(False)
+            self.canvaspod.show()
+            self.manual = False
+            index = 0
+            for particle in self.particles:
+                distx = abs(xc-particle[0])
+                disty = abs(yc-particle[1])
+                if distx<0.4 and disty<0.4:
+                    PosX = particle[0]
+                    PosY = particle[1]
+                    VarX = particle[2]
+                    VarY = particle[3]
+                    MomX = particle[4]
+                    MomY = particle[5]
+                    self.posX.delete(0,END)
+                    self.posX.insert(END,PosX)
+                    self.posY.delete(0,END)
+                    self.posY.insert(END,PosY)
+                    self.varX.delete(0,END)
+                    self.varX.insert(END,VarX)
+                    self.varY.delete(0,END)
+                    self.varY.insert(END,VarY)
+                    self.momX.delete(0,END)
+                    self.momX.insert(END,MomX)
+                    self.momY.delete(0,END)
+                    self.momY.insert(END,MomY)
+                    self.addXYvar(VarX,VarY,PosX,PosY)
+                    self.nparticle = index
+                    self.manual = True
+                    self.changeVar(event)
+                    break
+                index += 1
+        else:
+            if self.manual:
+                self.changeVar(event)
+                self.changePos(event)
+                self.changeMom(event)
+                
+    def addXYvar(self,VarX,VarY,PosX,PosY):
+        self.startX = PosX-VarX
+        self.arrowY.set_visible(False)
+        self.arrowX.set_visible(False)
+        limX = self.figpodSubPlot.get_xlim()[1]
+        limY = self.figpodSubPlot.get_ylim()[0]
+        if self.startX<-limX:
+            self.startX=-limX
+        self.startY = PosY-VarY
+        if self.startY<-limY:
+            self.startY=-limY
+        self.endX = PosX+VarX
+        if self.endX>limX:
+            self.endX=limX
+        self.endY = PosY+VarY
+        if self.endY>limX:
+            self.endY=limY
+        
+        
+        self.arrowX = matplotlib.text.Annotation('', fontsize=20, xy=(self.startX,PosY),
+                                            xytext=(self.endX,PosY),
+                                            arrowprops=dict(arrowstyle="-",
+                                                            linewidth = 1.5,
+                                                            alpha =0.5,
+                                                            color = 'orange')
+                                                            )
+        self.arrowY = matplotlib.text.Annotation('', fontsize=20, xy=(PosX,self.startY),
+                                            xytext=(PosX,self.endY),
+                                            arrowprops=dict(arrowstyle="-",
+                                                            linewidth = 1.5,
+                                                            alpha =0.5,
+                                                            color = 'orange')
+                                                            )
+        if self.changeVarXBool:
+            self.varX.delete(0,END)
+            self.varX.insert(END,np.round(VarX,decimals=2))
+        elif self.changeVarYBool:
+            self.varY.delete(0,END)
+            self.varY.insert(END,np.round(VarY,decimals=2))
+        self.figpodSubPlot.add_artist(self.arrowX)
+        self.figpodSubPlot.add_artist(self.arrowY)
+        self.canvaspod.show()
+        
+    def changeMom(self,event):
+        xc = event.xdata
+        yc = event.ydata
+        MomXStart = self.particles[self.nparticle][4] + self.particles[self.nparticle][0]
+        MomYStart = self.particles[self.nparticle][5] + self.particles[self.nparticle][1]
+        distX = abs(xc-MomXStart)
+        distY = abs(yc-MomYStart)
+        if distX<0.4 and distY<0.4:
+            self.changeMomBool = True
+    
+    def changeVar(self,event):
+        xc = event.xdata
+        yc = event.ydata
+        distX = min([abs(xc-self.startX),abs(xc-self.endX)])
+        distY = min([abs(yc-self.startY),abs(yc-self.endY)])
+        PosX = self.particles[self.nparticle][0]
+        PosY = self.particles[self.nparticle][1]
+        
+        if distX<0.4 and abs(yc-PosY)<0.4:
+            self.changeVarXBool = True
+        elif distY<0.4 and abs(abs(xc)-abs(PosX))<0.4:
+            self.changeVarYBool = True
+            
+    def changePos(self,event):
+        xc = event.xdata
+        yc = event.ydata
+        PosX = self.particles[self.nparticle][0]
+        PosY = self.particles[self.nparticle][1]
+        distX = abs(PosX-xc)
+        distY = abs(PosY-yc)
+        
+        if distX<0.4 and distY<0.4:
+            self.changePosBool = True
+    
+    def addPos(self,xc,yc):
+        self.posX.delete(0,END)
+        self.posX.insert(END,np.round(xc,decimals=2))
+        self.posY.delete(0,END)
+        self.posY.insert(END,np.round(yc,decimals=2))
+        VarX = self.particles[self.nparticle][2]
+        VarY = self.particles[self.nparticle][3]
+        self.addXYvar(VarX,VarY,xc,yc)
+        
+    def addMom(self,xc,yc,PosX,PosY):
+        MomX = xc-PosX
+        MomY = yc-PosY
+        self.momX.delete(0,END)
+        self.momX.insert(END,np.round(MomX,decimals=2))
+        self.momY.delete(0,END)
+        self.momY.insert(END,np.round(MomY,decimals=2))
+
+    def on_motion(self, event):
+        xc = event.xdata
+        yc = event.ydata
+#        print("Index ", self.nparticle)
+#        print("Länge ", len(self.particles))
+#        print("Particle ", self.particles[self.nparticle])
+        PosX = self.particles[self.nparticle][0]
+        PosY = self.particles[self.nparticle][1]
+        if self.changeVarXBool:
+            VarX = abs(PosX-xc)
+            VarY = self.particles[self.nparticle][3]
+            self.addXYvar(VarX,VarY,PosX,PosY)
+        elif self.changeVarYBool:
+            VarY = abs(PosY-yc)
+            VarX = self.particles[self.nparticle][2]
+            self.addXYvar(VarX,VarY,PosX,PosY)
+        elif self.changePosBool:
+            self.addPos(xc,yc)
+        elif self.changeMomBool:
+            self.addMom(xc,yc,PosX,PosY)
+        
+    def on_release(self,event):
+        if self.changeVarXBool:
+            self.particles[self.nparticle][2] = float(self.varX.get())
+            self.changeVarXBool = False
+            self.rebuildParticles()
+        elif self.changeVarYBool:
+            self.particles[self.nparticle][3] = float(self.varY.get())
+            self.changeVarYBool = False
+            self.rebuildParticles()
+        elif self.changePosBool:
+            self.particles[self.nparticle][0] = float(self.posX.get())
+            self.particles[self.nparticle][1] = float(self.posY.get())
+            self.changePosBool = False
+            self.rebuildParticles()
+        elif self.changeMomBool:
+            self.changeMomBool = False
+            self.particles[self.nparticle][4] = float(self.momX.get())
+            self.particles[self.nparticle][5] = float(self.momY.get())
+            self.rebuildParticles()
         
             
     def showSig(self):
@@ -361,6 +714,13 @@ class Pod(tkinter.Toplevel):
         self.btwSnap = tkinter.Entry(self.infoW, width=10, justify=LEFT)
         self.btwSnap.insert(END, 5)
         self.btwSnap.grid(row = 1, column = 1)
+        
+        tkinter.Label(self.infoW,text = "How\n many\n Modes", bg=bLabel, fg=fLabel, font=fontLabel, width=6).grid(row = 2)
+        self.nModes = tkinter.Entry(self.infoW, bg=bLabel, fg=fLabel, width = 3)
+        rnd = np.random.randint(1,10)
+        self.nModes.insert(END,rnd)
+        self.nModes.grid(row=2, column=1)
+        
         tkinter.Button(self.infoW, text="Apply", command=self.calculate2, bg=color).grid(row=3, column=1, sticky=E)
         
         
@@ -390,24 +750,27 @@ class Pod(tkinter.Toplevel):
         if nModes>self.maxMode:
             print("Input for Modes is too big - taking Maximum: ", self.maxMode, " instead.")
             nModes = self.maxMode
-            
-        PosX = float(self.posX.get())
-        PosY = float(self.posY.get())
-        VarX = float(self.varX.get())
-        VarY = float(self.varY.get())
-        k0x  = float(self.momX.get())
-        k0y  = float(self.momY.get())
-        Modes = self.Modes
 
-        string = "PosX \tPosY \tVarX \tVarY \tMomX \tMomY \tV \t#Modes \n"
+        string = "#Particle \tPosX \tPosY \tVarX \tVarY \tMomX \tMomY \tV \t\t#Modes \n"
         print(string)
         file = open((evalpath + "Logbook.txt"), "w")
         file.write(string)
-        
-
-        string =str(PosX) + "\t" + str(PosY) + "\t" + str(VarX) + "\t" + str(VarY) 
-        string+= "\t" + str(k0x) + "\t" + str(k0y) + "\t" + str(self.strPot) + "\t" + str(nModes) + "\n"
-        file.write(string)
+        pnum = 0
+        for particle in self.particles:
+            
+            PosX = float(self.posX.get())
+            PosY = float(self.posY.get())
+            VarX = float(self.varX.get())
+            VarY = float(self.varY.get())
+            k0x  = float(self.momX.get())
+            k0y  = float(self.momY.get())
+            Modes = self.Modes
+    
+            string =str(pnum) + "\t" + str(PosX) + "\t" + str(PosY) + "\t" + str(VarX) + "\t" + str(VarY) 
+            string+= "\t" + str(k0x) + "\t" + str(k0y) + "\t" + str(self.strPot) + "\t" + str(nModes) + "\n"
+            file.write(string)
+            pnum += 1
+            
         file.close()
         
         
@@ -424,7 +787,7 @@ class Pod(tkinter.Toplevel):
         betweenSnapshots = int(self.btwSnap.get())
         Tf = dt*steps*betweenSnapshots
         
-        psy0 = gaussian2d(self.X, self.Y, 1, PosX, PosY, VarX, VarY, k0x, k0y)
+        psy0 = self.psy0
         a0 = self.getA0(nModes)
         
         
@@ -585,6 +948,6 @@ if __name__ == "__main__":
     sig = np.random.rand(30)
     path_input = "hier"
     logbook = []
-    logbook.append([1,"sa", 2])
+    logbook.append([1,"sa", 2, [1,2,3,4,5,4]])
     MainWindow = Pod(Modes, sig, path_input, logbook)
     MainWindow.mainloop()
