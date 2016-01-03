@@ -22,6 +22,14 @@ def laplacian(Array2d,dx,dy):
 
     return xx+yy
     
+#Getting initialValues for ODE
+def getA0(nModes,Modes,psy0):
+    a0 = np.zeros(nModes, dtype=np.complex)
+    
+    for i in range(nModes):
+        a0[i]  = np.sum(psy0*np.conjugate(Modes[i]))
+    
+    return a0
     
 #Initial Gaussian - k0x k0y are the initial Momentum
 def gaussian2d(x, y, Coef, x0, y0, varx, vary, k0x, k0y):
@@ -189,72 +197,96 @@ if __name__ == "__main__":
 #    Initiating TimeValues    
     t0          = 0.0
     dt          = 0.01
- 
-#    Calculating the initail wavefunction psi0 
-    x0          = 0
-    y0          = 0
-    varx        = 1
-    vary        = 1
-    k0x         = 3
-    k0y         = 3
-    Coef        = 1.5
-    psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
     
     hbar        = 1
     m           = 1
 #   Initiating the Potential   
     boundary    = 0.7
     pot         = 10E6  
-    V           = potential(X,Y,boundary,pot)
-    V  =(X*X)**(abs(X)/15)+(Y*Y)**(abs(Y)/15)
+    V  = np.sqrt((X*X)**2+(Y*Y)**2)
     plt.imshow(V)
     plt.show()
- #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
-    s = schrodinger2d(X = X,
-                                Y = Y,
-                                psi0 = psi0,
-                                V = V,
-                                dt = dt,
-                                hbar = hbar,
-                                m = 1,
-                                t0 = t0)
-     
-# Performing the Calculation of the Wavefunction - A will be the DataMatrix - as above this had to bigger in the end
-    snapshots = 200  
-    betweenSnp = 50
-    A           = np.zeros((snapshots,len(psi0.flatten())), dtype=np.complex)
-    Movie1      = np.zeros((Ny,Nx,snapshots))
-   
-    print("Start with Leapfrog")     
-    for i in range(snapshots):
-        Movie1[:,:,i]   = s.real_psi
-        A[i,:]          = s.psi_x.flatten()
-        s.snapshot(betweenSnp)
-    
-    ani_frame(Movie1,"leapfrog.mp4","leapfrog")
-    dt = dt*betweenSnp
+    evaluation = 5
+    snapshots = 100 
+    betweenSnp = 20
+    A           = np.zeros((snapshots*evaluation,Nx*Ny), dtype=np.complex)
+    Aindex      = 0
+    for evals in range(evaluation):
+        
+        #    Calculating the initail wavefunction psi0 
+        x0          = np.random.rand()+np.random.randint(-1,2)
+        y0          = np.random.rand()+np.random.randint(-1,2)
+        varx        = np.random.rand()+np.random.randint(2)+0.2
+        vary        = np.random.rand()+np.random.randint(2)+0.2
+        k0x         = np.random.rand()+np.random.randint(-1,2)
+        k0y         = np.random.rand()+np.random.randint(-1,2)
+        Coef        = 1
+        psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
+        
+     #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
+        s = schrodinger2d(X = X,
+                                    Y = Y,
+                                    psi0 = psi0,
+                                    V = V,
+                                    dt = dt,
+                                    hbar = hbar,
+                                    m = 1,
+                                    t0 = t0)
+         
+    # Performing the Calculation of the Wavefunction - A will be the DataMatrix - as above this had to bigger in the end
+        Movie1      = np.zeros((Ny,Nx,snapshots))
+       
+        print("Start with", str(evals), "th Input Leapfrog for Modes")     
+        for i in range(snapshots):
+            Movie1[:,:,i]   = s.real_psi
+            A[Aindex,:]          = s.psi_x.flatten()
+            Aindex              += 1
+            s.snapshot(betweenSnp)
+        
+        ani_frame(Movie1,"leapfrog_" + str(evals) + "Input.mp4","leapfrog_input")
+        
 
 # Calculating the Modes    
     Mpath = "Modes/"
     if not os.path.exists(Mpath):
         os.mkdir(Mpath)
     print("Start with SVD")
-    Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=10)
+    Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=100)
     
-    
+# Random initial Value
+    x0          = np.random.rand()+np.random.randint(-1,2)
+    y0          = np.random.rand()+np.random.randint(-1,2)
+    varx        = np.random.rand()+np.random.randint(2)+0.2
+    vary        = np.random.rand()+np.random.randint(2)+0.2
+    k0x         = np.random.rand()+np.random.randint(-1,2)
+    k0y         = np.random.rand()+np.random.randint(-1,2)
+    Coef        = 1
+    psy0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
+    s = schrodinger2d(X = X,
+                        Y = Y,
+                        psi0 = psi0,
+                        V = V,
+                        dt = dt,
+                        hbar = hbar,
+                        m = 1,
+                        t0 = t0)
+    Movie1      = np.zeros((Ny,Nx,snapshots))
+   
+    print("Start with Leapfrog for evaluation")     
+    for i in range(snapshots):
+        Movie1[:,:,i]   = s.real_psi
+        s.snapshot(betweenSnp)
+    ani_frame(Movie1,"leapfrog_evaluation.mp4","leapfrog_evaluation")
+    dt = dt*betweenSnp
 
 # For simplicity and calculating time just taking the first "cut" Modes
-# NOTE: if cut>2 ode will NOT converge
-    for cut in range(10,101,10):
-        cut = 200
+    for cut in range(10,171,40):
+        
         path = "cut"+str(cut)+"/"
         if not os.path.exists(path):
             os.mkdir(path)
         
             
-        
-    # Inserting the same initial Value for the galerkin Eq as above the calculated Wave with leapfrog!
-        y0 = Atemps[0,:cut]
      
     # Calculating the Laplacian of every POD-Mode   
         DModes = np.zeros((cut,Ny,Nx), np.complex)   
@@ -271,9 +303,6 @@ if __name__ == "__main__":
             for l in range(cut):
                 H[k,l] = (np.conjugate(Modes[k])*Coef[l]).sum()
          
-#        print("H Matrix is Hermitian: ")       
-#        print((np.allclose(H,conjugate(H.T))))
-    #    print(H)
         
     # Galerkin Eq function for the ode   
         def fun(t,y):
@@ -297,6 +326,7 @@ if __name__ == "__main__":
         solution = []
         POD_A = []
     # Solving Ode    
+        y0 = getA0(cut,Modes,psy0)
         r = ode(fun).set_integrator('zvode', method='bdf', with_jacobian=False)
         r.set_initial_value(y0, t0)
         
@@ -323,7 +353,7 @@ if __name__ == "__main__":
             psi           = np.reshape(Ap[i,:],(Ny,Nx))
             Movie2[:,:,i] = abs(psi*psi)
         ani_frame(Movie2,path+"POD.mp4", "POD_with"+str(cut))
-        ani_frame(Movie2-Movie1,path+"Difference.mp4", "difference_with"+str(cut))  
+        ani_frame(Movie2-Movie1,path+"Difference.mp4", "difference_with"+str(cut)+" Modes")  
         
         for i in range(snapshots):
             Movie3[:,:,i] = (Movie1[:,:,i] - Movie2[:,:,i])/Movie2[:,:,i]

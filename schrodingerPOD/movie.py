@@ -23,7 +23,7 @@ def ani_frame(Array, path, title):
     length = shape(Array)[2]
     im = ax.imshow(Array[:,:,0], animated = True, cmap = "gist_ncar")
     fig.colorbar(im)
-    dpi = 150
+    dpi = 170
     
     tight_layout()
 
@@ -34,7 +34,7 @@ def ani_frame(Array, path, title):
         im.set_data(tmp)
         return im
 
-    ani = animation.FuncAnimation(fig,update_img,length,interval=20)
+    ani = animation.FuncAnimation(fig,update_img,length,interval=15)
     plt.show()
     writer = animation.writers['ffmpeg'](fps=10)
 
