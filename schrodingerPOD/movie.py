@@ -34,9 +34,9 @@ def ani_frame(Array, path, title):
         im.set_data(tmp)
         return im
 
-    ani = animation.FuncAnimation(fig,update_img,length,interval=15)
+    ani = animation.FuncAnimation(fig,update_img,length,interval=4)
     plt.show()
-    writer = animation.writers['ffmpeg'](fps=10)
+    writer = animation.writers['ffmpeg'](fps=4)
 
     ani.save(path,writer=writer,dpi=dpi)
     print("done with movie")

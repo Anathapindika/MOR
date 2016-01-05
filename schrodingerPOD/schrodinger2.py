@@ -10,6 +10,12 @@ from matplotlib import animation
 from movie import*
 from scipy.integrate import ode
 import os
+from scipy.special import hermite
+
+def eigenstates(nx,ny,beta,X,Y):
+    res = beta/np.sqrt(pi*2**(nx+ny)*factorial(nx)*factorial(ny))
+    res *= np.exp(-beta**2*(X**2+Y**2)/2)*hermite(nx)(beta*X)*hermite(ny)(beta*Y)
+    return res
 
 #Laplacian Module - was more exakt then the fouriertransform
 def laplacian(Array2d,dx,dy):
@@ -188,8 +194,8 @@ if __name__ == "__main__":
 #    Initiating the Grid
     Nx          = pow(2,8)
     Ny          = pow(2,8)
-    dx          = 0.1
-    dy          = 0.1
+    dx          = 0.05
+    dy          = 0.05
     x           = (np.arange(Nx) - Nx/2) * dx
     y           = (np.arange(Ny) - Ny/2) * dy
     X, Y        = np.meshgrid(x,y)
@@ -203,26 +209,21 @@ if __name__ == "__main__":
 #   Initiating the Potential   
     boundary    = 0.7
     pot         = 10E6  
-    V  = np.sqrt((X*X)**2+(Y*Y)**2)
+    V  = ((X*X)**2+(Y*Y)**2)/2
     plt.imshow(V)
     plt.show()
-    evaluation = 5
+    evaluation = 1
     snapshots = 100 
     betweenSnp = 20
     A           = np.zeros((snapshots*evaluation,Nx*Ny), dtype=np.complex)
     Aindex      = 0
     for evals in range(evaluation):
-        
-        #    Calculating the initail wavefunction psi0 
-        x0          = np.random.rand()+np.random.randint(-1,2)
-        y0          = np.random.rand()+np.random.randint(-1,2)
-        varx        = np.random.rand()+np.random.randint(2)+0.2
-        vary        = np.random.rand()+np.random.randint(2)+0.2
-        k0x         = np.random.rand()+np.random.randint(-1,2)
-        k0y         = np.random.rand()+np.random.randint(-1,2)
-        Coef        = 1
-        psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
-        
+        print(evals)
+        #    Calculating the initail wavefunction psi0- which are Eigenstates
+
+        psi0        = eigenstates(2,2,1,X,Y)
+
+
      #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
         s = schrodinger2d(X = X,
                                     Y = Y,
@@ -253,40 +254,43 @@ if __name__ == "__main__":
     print("Start with SVD")
     Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=100)
     
-# Random initial Value
-    x0          = np.random.rand()+np.random.randint(-1,2)
-    y0          = np.random.rand()+np.random.randint(-1,2)
-    varx        = np.random.rand()+np.random.randint(2)+0.2
-    vary        = np.random.rand()+np.random.randint(2)+0.2
-    k0x         = np.random.rand()+np.random.randint(-1,2)
-    k0y         = np.random.rand()+np.random.randint(-1,2)
-    Coef        = 1
-    psy0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
-    s = schrodinger2d(X = X,
-                        Y = Y,
-                        psi0 = psi0,
-                        V = V,
-                        dt = dt,
-                        hbar = hbar,
-                        m = 1,
-                        t0 = t0)
-    Movie1      = np.zeros((Ny,Nx,snapshots))
-   
-    print("Start with Leapfrog for evaluation")     
-    for i in range(snapshots):
-        Movie1[:,:,i]   = s.real_psi
-        s.snapshot(betweenSnp)
-    ani_frame(Movie1,"leapfrog_evaluation.mp4","leapfrog_evaluation")
-    dt = dt*betweenSnp
+    dt = dt*betweenSnp 
+    
+    for evals in range(3):
+            
+        # Random initial Value
+        x0          = np.random.rand()
+        y0          = np.random.rand()
+        varx        = np.random.rand()
+        vary        = np.random.rand()
+        k0x         = np.random.rand()+np.random.randint(-1,2)
+        k0y         = np.random.rand()+np.random.randint(-1,2)
+        Coef        = 0.1
+        psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
+        s = schrodinger2d(X = X,
+                            Y = Y,
+                            psi0 = psi0,
+                            V = V,
+                            dt = dt,
+                            hbar = hbar,
+                            m = 1,
+                            t0 = t0)
+        Movie1      = np.zeros((Ny,Nx,snapshots))
+           
+        print("Start with Leapfrog for evaluation")     
+        for i in range(snapshots):
+            Movie1[:,:,i]   = s.real_psi
+            s.snapshot(betweenSnp)
 
-# For simplicity and calculating time just taking the first "cut" Modes
-    for cut in range(10,171,40):
         
-        path = "cut"+str(cut)+"/"
+        # For simplicity and calculating time just taking the first "cut" Modes
+        cut= 50
+        
+        path = "evaluation"+str(evals)+"/"
         if not os.path.exists(path):
             os.mkdir(path)
         
-            
+        ani_frame(Movie1,path + "leapfrog_evaluation.mp4","leapfrog_evaluation")
      
     # Calculating the Laplacian of every POD-Mode   
         DModes = np.zeros((cut,Ny,Nx), np.complex)   
@@ -326,7 +330,7 @@ if __name__ == "__main__":
         solution = []
         POD_A = []
     # Solving Ode    
-        y0 = getA0(cut,Modes,psy0)
+        y0 = getA0(cut,Modes,psi0)
         r = ode(fun).set_integrator('zvode', method='bdf', with_jacobian=False)
         r.set_initial_value(y0, t0)
         
@@ -339,6 +343,7 @@ if __name__ == "__main__":
             solution.append([r.t,r.y])
         
         print("Done with Galerkin Ode")
+        
     #    POD_Atemps = np.zeros((snapshots,cut), dtype=np.complex)
         
         ModesFlat = np.zeros((cut,Nx*Ny), dtype=np.complex)
@@ -355,9 +360,9 @@ if __name__ == "__main__":
         ani_frame(Movie2,path+"POD.mp4", "POD_with"+str(cut))
         ani_frame(Movie2-Movie1,path+"Difference.mp4", "difference_with"+str(cut)+" Modes")  
         
-        for i in range(snapshots):
-            Movie3[:,:,i] = (Movie1[:,:,i] - Movie2[:,:,i])/Movie2[:,:,i]
-        ani_frame(Movie3, path+"Error.mp4", path+"error_with"+str(cut))
+#        for i in range(snapshots):
+#            Movie3[:,:,i] = (Movie1[:,:,i] - Movie2[:,:,i])/Movie2[:,:,i]
+#        ani_frame(Movie3, path+"Error.mp4", path+"error_with"+str(cut))
       
 #    Movie2 = 
 #    ani_frame(Movie1,"leapfrog.mp4","leapfrog")
