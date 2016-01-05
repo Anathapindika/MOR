@@ -195,8 +195,8 @@ if __name__ == "__main__":
 #    Initiating the Grid
     Nx          = pow(2,8)
     Ny          = pow(2,8)
-    dx          = 0.05
-    dy          = 0.05
+    dx          = 0.1
+    dy          = 0.1
     x           = (np.arange(Nx) - Nx/2) * dx
     y           = (np.arange(Ny) - Ny/2) * dy
     X, Y        = np.meshgrid(x,y)
@@ -255,11 +255,21 @@ if __name__ == "__main__":
     print("Start with SVD")
     Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=100)
     
-    dt = dt*betweenSnp 
+    Epath = "Eigenstates/"
+    if not os.path.exists(Epath):
+        os.mkdir(Epath)
+    #Printing Eigenstates
+    for i in range(10):
+        for k in range(10):
+            imtemp = eigenstates(i,k,1,X,Y)
+            print_frame(imtemp,Epath+"State_nx="+str(i)+"_ny="+str(k)+".jpg")
     
-    for evals in range(3):
+    dt = dt*betweenSnp 
+    evaluation = 1
+    for evals in range(evaluation):
             
-        # Random initial Value
+        # Random initial Value (quoted for gaussian input)
+        """
         x0          = np.random.rand()
         y0          = np.random.rand()
         varx        = np.random.rand()
@@ -268,6 +278,9 @@ if __name__ == "__main__":
         k0y         = np.random.rand()+np.random.randint(-1,2)
         Coef        = 0.1
         psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
+        """
+        #Eigenstate input
+        psi0        = eigenstates(2,1,1,X,Y)
         s = schrodinger2d(X = X,
                             Y = Y,
                             psi0 = psi0,
