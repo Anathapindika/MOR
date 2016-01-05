@@ -11,6 +11,7 @@ from movie import*
 from scipy.integrate import ode
 import os
 from scipy.special import hermite
+from scipy.misc import factorial
 
 def eigenstates(nx,ny,beta,X,Y):
     res = beta/np.sqrt(pi*2**(nx+ny)*factorial(nx)*factorial(ny))
