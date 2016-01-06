@@ -13,10 +13,17 @@ import os
 from scipy.special import hermite
 from scipy.misc import factorial
 
-def eigenstates(nx,ny,beta,X,Y):
-    res = beta/np.sqrt(pi*2**(nx+ny)*factorial(nx)*factorial(ny))
-    res *= np.exp(-beta**2*(X**2+Y**2)/2)*hermite(nx)(beta*X)*hermite(ny)(beta*Y)
+def eigenstates(nx,ny,wx,wy,X,Y,m=1,hbar=1):
+    betax = np.sqrt(m*wx/hbar)
+    resx  = np.sqrt(betax)*np.exp(-(m*wx*X**2)/(2*hbar))*hermite(nx)(betax*X)*1.0/np.sqrt(2**nx*factorial(nx))
+    
+    betay = np.sqrt(m*wy/hbar)
+    resy  = np.sqrt(betay)*np.exp(-(m*wy*Y**2)/(2*hbar))*hermite(ny)(betay*Y)*1.0/np.sqrt(2**ny*factorial(ny))
+    
+    res   = resx*resy*1/np.sqrt(np.pi)
+    
     return res
+
 
 #Laplacian Module - was more exakt then the fouriertransform
 def laplacian(Array2d,dx,dy):
@@ -207,10 +214,12 @@ if __name__ == "__main__":
     
     hbar        = 1
     m           = 1
-#   Initiating the Potential   
+#   Initiating the Potential  
+    wx          = 1
+    wy          = 2
     boundary    = 0.7
     pot         = 10E6  
-    V  = ((X*X)**2+(Y*Y)**2)/2
+    V  = ((wx*(X*X)**2)+(wy*(Y*Y)**2))/2
     plt.imshow(V)
     plt.show()
     evaluation = 1
@@ -222,7 +231,7 @@ if __name__ == "__main__":
         print(evals)
         #    Calculating the initail wavefunction psi0- which are Eigenstates
 
-        psi0        = eigenstates(2,2,1,X,Y)
+        psi0        = eigenstates(1,2,wx,wy,X,Y)
 
 
      #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
@@ -261,7 +270,7 @@ if __name__ == "__main__":
     #Printing Eigenstates
     for i in range(10):
         for k in range(10):
-            imtemp = eigenstates(i,k,1,X,Y)
+            imtemp = eigenstates(i,k,wy,wy,X,Y)
             print_frame(imtemp,Epath+"State_nx="+str(i)+"_ny="+str(k)+".jpg")
     
     dt = dt*betweenSnp 
@@ -280,7 +289,7 @@ if __name__ == "__main__":
         psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
         """
         #Eigenstate input
-        psi0        = eigenstates(2,1,1,X,Y)
+        psi0        = eigenstates(1,2,wx,wy,X,Y)
         s = schrodinger2d(X = X,
                             Y = Y,
                             psi0 = psi0,
