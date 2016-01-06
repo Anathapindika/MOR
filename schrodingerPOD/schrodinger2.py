@@ -219,19 +219,19 @@ if __name__ == "__main__":
     wy          = 2
     boundary    = 0.7
     pot         = 10E6  
-    V  = ((wx*(X*X)**2)+(wy*(Y*Y)**2))/2
+    V  = ((wx*(X*X))+(wy*(Y*Y)))/2
     plt.imshow(V)
     plt.show()
-    evaluation = 1
-    snapshots = 100 
-    betweenSnp = 20
+    evaluation = 3
+    snapshots = 10 
+    betweenSnp = 15
     A           = np.zeros((snapshots*evaluation,Nx*Ny), dtype=np.complex)
     Aindex      = 0
     for evals in range(evaluation):
         print(evals)
         #    Calculating the initail wavefunction psi0- which are Eigenstates
 
-        psi0        = eigenstates(1,2,wx,wy,X,Y)
+        psi0        = eigenstates(2*evals,2*evals,wx,wy,X,Y)
 
 
      #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
@@ -262,34 +262,34 @@ if __name__ == "__main__":
     if not os.path.exists(Mpath):
         os.mkdir(Mpath)
     print("Start with SVD")
-    Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=100)
+    Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=10)
     
     Epath = "Eigenstates/"
     if not os.path.exists(Epath):
         os.mkdir(Epath)
     #Printing Eigenstates
-    for i in range(10):
-        for k in range(10):
-            imtemp = eigenstates(i,k,wy,wy,X,Y)
-            print_frame(imtemp,Epath+"State_nx="+str(i)+"_ny="+str(k)+".jpg")
+#    for i in range(10):
+#        for k in range(10):
+#            imtemp = eigenstates(i,k,wy,wy,X,Y)
+#            print_frame(imtemp,Epath+"State_nx="+str(i)+"_ny="+str(k)+".jpg")
     
-    dt = dt*betweenSnp 
-    evaluation = 1
+    dtpod = dt*betweenSnp 
+    evaluation = 5
     for evals in range(evaluation):
             
         # Random initial Value (quoted for gaussian input)
-        """
-        x0          = np.random.rand()
-        y0          = np.random.rand()
-        varx        = np.random.rand()
-        vary        = np.random.rand()
-        k0x         = np.random.rand()+np.random.randint(-1,2)
-        k0y         = np.random.rand()+np.random.randint(-1,2)
-        Coef        = 0.1
+        x0          = 0
+        y0          = 0
+        varx        = 1+np.random.rand()
+        vary        = 1+np.random.rand()
+        k0x         = np.random.rand()
+        k0y         = np.random.rand()
+        Coef        = 1
         psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
-        """
+        
+        longer = 10
         #Eigenstate input
-        psi0        = eigenstates(1,2,wx,wy,X,Y)
+#        psi0        = eigenstates(evals+np.random.randint(10),2*evals+np.random.randint(10),wx,wy,X,Y)
         s = schrodinger2d(X = X,
                             Y = Y,
                             psi0 = psi0,
@@ -301,13 +301,13 @@ if __name__ == "__main__":
         Movie1      = np.zeros((Ny,Nx,snapshots))
            
         print("Start with Leapfrog for evaluation")     
-        for i in range(snapshots):
+        for i in range(snapshots*longer):
             Movie1[:,:,i]   = s.real_psi
             s.snapshot(betweenSnp)
 
         
         # For simplicity and calculating time just taking the first "cut" Modes
-        cut= 50
+        cut= 20
         
         path = "evaluation"+str(evals)+"/"
         if not os.path.exists(path):
@@ -358,14 +358,15 @@ if __name__ == "__main__":
         r.set_initial_value(y0, t0)
         
         steps = snapshots
-        Tf = dt*steps
+        Tf = dtpod*steps*longer
         print("Start with Galerkin Ode")
         while r.successful() and r.t < Tf:
             POD_A.append(r.y)
-            r.integrate(r.t+dt)
+            r.integrate(r.t+dtpod)
             solution.append([r.t,r.y])
         
-        print("Done with Galerkin Ode")
+    
+        print("Done with Galerkin Ode", np.shape(POD_A))
         
     #    POD_Atemps = np.zeros((snapshots,cut), dtype=np.complex)
         
@@ -377,7 +378,7 @@ if __name__ == "__main__":
         Ap = np.dot(POD_A,ModesFlat)
         Movie2 = np.zeros_like(Movie1)
         Movie3 = np.zeros_like(Movie1)
-        for i in range(snapshots):
+        for i in range(snapshots*longer):
             psi           = np.reshape(Ap[i,:],(Ny,Nx))
             Movie2[:,:,i] = abs(psi*psi)
         ani_frame(Movie2,path+"POD.mp4", "POD_with"+str(cut))
