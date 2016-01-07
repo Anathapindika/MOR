@@ -13,6 +13,7 @@ import os
 from scipy.special import hermite
 from scipy.misc import factorial
 from scipy.ndimage.interpolation import shift
+import math
 
 def eigenstates(nx,ny,wx,wy,X,Y,m=1,hbar=1):
     betax = np.sqrt(m*wx/hbar)
@@ -22,6 +23,9 @@ def eigenstates(nx,ny,wx,wy,X,Y,m=1,hbar=1):
     resy  = np.sqrt(betay)*np.exp(-(m*wy*Y**2)/(2*hbar))*hermite(ny)(betay*Y)*1.0/np.sqrt(2**ny*factorial(ny))
     
     res   = resx*resy*1/np.sqrt(np.pi)+0j
+    
+    normalizer = abs(res*res).sum()
+    res = res/np.sqrt(normalizer)
     
     return res
 
@@ -80,11 +84,20 @@ def SVD_Modes(A, Mpath, Nx, Ny, nModes = 100):
     At      = np.conjugate(A.T)   
     AAt     = np.dot(A,At)
     sig,U   = np.linalg.eigh(AAt)
-
+    
     sorter  = sig.argsort()[::-1] 
     sig     = np.sqrt(sig)
     sig     = sig[sorter]
     U       = U[:,sorter]
+    
+        
+    if math.isnan(np.amin(sig)):
+        index = 0
+        while not math.isnan(sig[index]):
+            index +=1
+        print("The SVD did converge too fast - had to cut the", len(sig), " entries to ", index, "entries")
+        sig = sig[:index]
+        U   = U[:,:index]
 
 
     path = Mpath + "sig.jpg"
@@ -92,7 +105,16 @@ def SVD_Modes(A, Mpath, Nx, Ny, nModes = 100):
     
     Ut      = np.conjugate(U.T)
     Sig     = np.diag(sig)
-   
+    
+    cuter = len(sig)
+    if nModes>cuter:
+        nModes=cuter
+        print("can only save ", cuter, " modes")
+        
+            
+            
+        print("Minimaler SigmaWert ",np.amin(sig), " Index", index)
+        
     UtA     = np.dot(Ut,A)
     V       = np.zeros_like(UtA, dtype=np.complex)
     Modes = np.zeros((len(V[:,0]),Ny,Nx), dtype=np.complex)
@@ -117,7 +139,7 @@ def SVD_Modes(A, Mpath, Nx, Ny, nModes = 100):
     #Assert if SVD failled
     assert(np.allclose(A,Ap))
     print("SVD succses:")
-    print(np.allclose(A,Ap))
+    print("True")
     return Modes, Atemps
 
 
@@ -209,13 +231,11 @@ if __name__ == "__main__":
     Ny          = pow(2,8)
     dx          = 0.08
     dy          = 0.08
-    x           = (np.arange(Nx) - Nx/2) * dx
-    y           = (np.arange(Ny) - Ny/2) * dy
-    X, Y        = np.meshgrid(x,y)
+
 
 #    Initiating TimeValues    
     t0          = 0.0
-    dt          = 0.01
+    dt          = 0.0001
     
     hbar        = 1
     m           = 1
@@ -224,29 +244,30 @@ if __name__ == "__main__":
     wy          = 2
     boundary    = 0.7
     pot         = 10E6  
-    V  = ((wx*(X*X))+(wy*(Y*Y)))/2
-    plt.imshow(V)
-    plt.show()
+
     evaluation = 10
-    snapshots = 40
-    betweenSnp = 50
+    snapshots = 30
+    betweenSnp = 300
     A           = np.zeros((snapshots*evaluation,Nx*Ny), dtype=np.complex)
     Aindex      = 0
+    x           = (np.arange(Nx) - Nx/2) * dx # + np.random.randint(-Nx/5,Nx/5)*dx
+    y           = (np.arange(Ny) - Ny/2) * dy # + np.random.randint(-Ny/5,Ny/5)*dy
+    X, Y        = np.meshgrid(x,y)
+    V  = ((X*wx)**2+(Y*wy)**2)/2
+        
     for evals in range(evaluation):
         print(evals)
         #    Calculating the initail wavefunction psi0- which are Eigenstates
 
 #        psi0        = eigenstates(2*evals,2*evals,wx,wy,X,Y)
 
-        x0          = np.random.rand()+np.random.randint(-2,3)
-        y0          = np.random.rand()+np.random.randint(-2,3)
-        varx        = 1+np.random.rand()
-        vary        = 1+np.random.rand()
-        k0x         = np.random.rand()+np.random.randint(-2,3)
-        k0y         = np.random.rand()+np.random.randint(-2,3)
+        x0          = np.random.rand()+np.random.randint(-5,4)
+        y0          = np.random.rand()+np.random.randint(-5,4)
+        varx        = 0.5+np.random.randint(3)+np.random.rand()
+        vary        = 0.5+np.random.randint(3)+np.random.rand()
+        k0x         = np.random.rand()+np.random.randint(-5,4)
+        k0y         = np.random.rand()+np.random.randint(-5,4)
         psi0        = gaussian2d(X,Y,x0,y0,varx,vary,k0x,k0y)
-        
-#        print("TEEEEEST",abs(psi0*psi0).sum())
         
      #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
         s = schrodinger2d(X = X,
@@ -278,7 +299,7 @@ if __name__ == "__main__":
     if not os.path.exists(Mpath):
         os.mkdir(Mpath)
     print("Start with SVD")
-    Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=10)
+    Modes, Atemps = SVD_Modes(A,Mpath,Nx,Ny, nModes=100)
     
     Epath = "Eigenstates/"
     if not os.path.exists(Epath):
@@ -293,8 +314,9 @@ if __name__ == "__main__":
     
     dtpod = dt*betweenSnp 
     evaluation = 5
+
     for evals in range(evaluation):
-            
+
         # Random initial Value (quoted for gaussian input)
         x0          = np.random.rand()+np.random.randint(-2,3)
         y0          = np.random.rand()+np.random.randint(-2,3)
@@ -305,7 +327,7 @@ if __name__ == "__main__":
         psi0        = gaussian2d(X,Y,x0,y0,varx,vary,k0x,k0y)
 
         
-        longer = 2
+        longer = 1
         #Eigenstate input
 #        psi0        = eigenstates(evals+np.random.randint(10),2*evals+np.random.randint(10),wx,wy,X,Y)
         s = schrodinger2d(X = X,
@@ -325,7 +347,10 @@ if __name__ == "__main__":
 
         
         # For simplicity and calculating time just taking the first "cut" Modes
-        cut= 100
+        cut= 80
+        if cut>len(Modes):
+            cut=len(Modes)-1
+            print("using Maximal Modes: ", cut)
         
         path = "evaluation"+str(evals)+"/"
         if not os.path.exists(path):
