@@ -12,6 +12,7 @@ from scipy.integrate import ode
 import os
 from scipy.special import hermite
 from scipy.misc import factorial
+from scipy.ndimage.interpolation import shift
 
 def eigenstates(nx,ny,wx,wy,X,Y,m=1,hbar=1):
     betax = np.sqrt(m*wx/hbar)
@@ -20,7 +21,7 @@ def eigenstates(nx,ny,wx,wy,X,Y,m=1,hbar=1):
     betay = np.sqrt(m*wy/hbar)
     resy  = np.sqrt(betay)*np.exp(-(m*wy*Y**2)/(2*hbar))*hermite(ny)(betay*Y)*1.0/np.sqrt(2**ny*factorial(ny))
     
-    res   = resx*resy*1/np.sqrt(np.pi)
+    res   = resx*resy*1/np.sqrt(np.pi)+0j
     
     return res
 
@@ -46,10 +47,14 @@ def getA0(nModes,Modes,psy0):
     return a0
     
 #Initial Gaussian - k0x k0y are the initial Momentum
-def gaussian2d(x, y, Coef, x0, y0, varx, vary, k0x, k0y):
-    
-    return (Coef * np.exp(-0.5 * (((x - x0) * 1. / varx) ** 2 
-    + ((y - y0) * 1. / vary) ** 2) + 1j * x * k0x + 1j * y *k0y))
+def gaussian2d(x, y, x0, y0, varx, vary, k0x, k0y):
+    Coef = 1
+#    Coef = 1./(2*np.pi*varx*vary)
+    psi = (Coef * np.exp(-0.5 * (((x - x0) * 1. / varx) ** 2 
+        + ((y - y0) * 1. / vary) ** 2) + (1j * x * k0x + 1j * y *k0y)))
+    normalizer = abs(psi*psi).sum()
+    psi = psi/np.sqrt(normalizer)
+    return psi
 
 #Simple BoxPotential - boundary is the length of the boundarywall - pot the value of the potential 
 def potential(X, Y, boundary, pot):
@@ -176,7 +181,8 @@ class schrodinger2d(object):
         Takes "nSteps" - the value how many steps of timelength dt are evaluated
         befor giving back the self.psi_x
         """
-        
+
+
         self.psi_x    *= self.evolve_x_half
         
         for i in range(nSteps-1):
@@ -189,8 +195,7 @@ class schrodinger2d(object):
         self.psi_k *= self.evolve_k
         self.k_to_x()
         
-        self.evolve_x_half
-        self.x_to_k()
+        self.psi_x    *= self.evolve_x_half
         
         self.real_psi = abs(self.psi_x*self.psi_x)
         self.t      += self.dt*nSteps
@@ -202,8 +207,8 @@ if __name__ == "__main__":
 #    Initiating the Grid
     Nx          = pow(2,8)
     Ny          = pow(2,8)
-    dx          = 0.1
-    dy          = 0.1
+    dx          = 0.08
+    dy          = 0.08
     x           = (np.arange(Nx) - Nx/2) * dx
     y           = (np.arange(Ny) - Ny/2) * dy
     X, Y        = np.meshgrid(x,y)
@@ -222,18 +227,27 @@ if __name__ == "__main__":
     V  = ((wx*(X*X))+(wy*(Y*Y)))/2
     plt.imshow(V)
     plt.show()
-    evaluation = 3
-    snapshots = 10 
-    betweenSnp = 15
+    evaluation = 10
+    snapshots = 40
+    betweenSnp = 50
     A           = np.zeros((snapshots*evaluation,Nx*Ny), dtype=np.complex)
     Aindex      = 0
     for evals in range(evaluation):
         print(evals)
         #    Calculating the initail wavefunction psi0- which are Eigenstates
 
-        psi0        = eigenstates(2*evals,2*evals,wx,wy,X,Y)
+#        psi0        = eigenstates(2*evals,2*evals,wx,wy,X,Y)
 
-
+        x0          = np.random.rand()+np.random.randint(-2,3)
+        y0          = np.random.rand()+np.random.randint(-2,3)
+        varx        = 1+np.random.rand()
+        vary        = 1+np.random.rand()
+        k0x         = np.random.rand()+np.random.randint(-2,3)
+        k0y         = np.random.rand()+np.random.randint(-2,3)
+        psi0        = gaussian2d(X,Y,x0,y0,varx,vary,k0x,k0y)
+        
+#        print("TEEEEEST",abs(psi0*psi0).sum())
+        
      #  Creating Schrodinger Object - this should finnaly be in a loop with several Inital wavefunction
         s = schrodinger2d(X = X,
                                     Y = Y,
@@ -253,7 +267,9 @@ if __name__ == "__main__":
             A[Aindex,:]          = s.psi_x.flatten()
             Aindex              += 1
             s.snapshot(betweenSnp)
-        
+        normalizer = np.amax(Movie1)
+        Movie1 *= 1./normalizer
+        print("HIER ", np.amax(Movie1))
         ani_frame(Movie1,"leapfrog_" + str(evals) + "Input.mp4","leapfrog_input")
         
 
@@ -268,9 +284,11 @@ if __name__ == "__main__":
     if not os.path.exists(Epath):
         os.mkdir(Epath)
     #Printing Eigenstates
+#    Modes = np.zeros((100,Ny,Nx), dtype=np.complex)
 #    for i in range(10):
-#        for k in range(10):
+#        for k in range(1,100,10):
 #            imtemp = eigenstates(i,k,wy,wy,X,Y)
+#            Modes[i,:,:] = imtemp/10
 #            print_frame(imtemp,Epath+"State_nx="+str(i)+"_ny="+str(k)+".jpg")
     
     dtpod = dt*betweenSnp 
@@ -278,16 +296,16 @@ if __name__ == "__main__":
     for evals in range(evaluation):
             
         # Random initial Value (quoted for gaussian input)
-        x0          = 0
-        y0          = 0
+        x0          = np.random.rand()+np.random.randint(-2,3)
+        y0          = np.random.rand()+np.random.randint(-2,3)
         varx        = 1+np.random.rand()
         vary        = 1+np.random.rand()
-        k0x         = np.random.rand()
-        k0y         = np.random.rand()
-        Coef        = 1
-        psi0        = gaussian2d(X,Y,Coef,x0,y0,varx,vary,k0x,k0y)
+        k0x         = np.random.rand()+np.random.randint(-2,3)
+        k0y         = np.random.rand()+np.random.randint(-2,3)
+        psi0        = gaussian2d(X,Y,x0,y0,varx,vary,k0x,k0y)
+
         
-        longer = 10
+        longer = 2
         #Eigenstate input
 #        psi0        = eigenstates(evals+np.random.randint(10),2*evals+np.random.randint(10),wx,wy,X,Y)
         s = schrodinger2d(X = X,
@@ -298,7 +316,7 @@ if __name__ == "__main__":
                             hbar = hbar,
                             m = 1,
                             t0 = t0)
-        Movie1      = np.zeros((Ny,Nx,snapshots))
+        Movie1      = np.zeros((Ny,Nx,snapshots*longer))
            
         print("Start with Leapfrog for evaluation")     
         for i in range(snapshots*longer):
@@ -307,12 +325,14 @@ if __name__ == "__main__":
 
         
         # For simplicity and calculating time just taking the first "cut" Modes
-        cut= 20
+        cut= 100
         
         path = "evaluation"+str(evals)+"/"
         if not os.path.exists(path):
             os.mkdir(path)
         
+        normalizer = np.amax(Movie1)
+        Movie1 *= 1./normalizer
         ani_frame(Movie1,path + "leapfrog_evaluation.mp4","leapfrog_evaluation")
      
     # Calculating the Laplacian of every POD-Mode   
@@ -366,7 +386,7 @@ if __name__ == "__main__":
             solution.append([r.t,r.y])
         
     
-        print("Done with Galerkin Ode", np.shape(POD_A))
+        print("Done with Galerkin Ode")
         
     #    POD_Atemps = np.zeros((snapshots,cut), dtype=np.complex)
         
@@ -381,8 +401,11 @@ if __name__ == "__main__":
         for i in range(snapshots*longer):
             psi           = np.reshape(Ap[i,:],(Ny,Nx))
             Movie2[:,:,i] = abs(psi*psi)
+            
+        Movie2 *= 1./normalizer
         ani_frame(Movie2,path+"POD.mp4", "POD_with"+str(cut))
-        ani_frame(Movie2-Movie1,path+"Difference.mp4", "difference_with"+str(cut)+" Modes")  
+        difMovie = Movie2-Movie1
+        ani_frame(difMovie,path+"Difference.mp4", "difference_with"+str(cut)+" Modes")  
         
 #        for i in range(snapshots):
 #            Movie3[:,:,i] = (Movie1[:,:,i] - Movie2[:,:,i])/Movie2[:,:,i]
