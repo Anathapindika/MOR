@@ -1,11 +1,3 @@
-# First we redefine fft and ifft to automate wrap/unwrap.
-
-#import scipy.fftpack as scf
-#def fft(fx):
-#    return scf.fftshift(scf.fft(scf.fftshift(fx))) 
-#def ifft(fk):
-#    return scf.fftshift(scf.ifft(scf.fftshift(fk)))
-#
 
 from scipy.fftpack import fft, ifft
 
@@ -24,10 +16,8 @@ K[:N/2],K[N/2:] = 1*K[N/2:],1*K[:N/2]
 
 # Choose potential and initial conditions.
 
-#V = X**2
 sep = X[-1]/4
-psi = exp(-(X-sep)**2/2) + exp(-(X+sep)**2/2) + 0j
-# psi_k = fft(psi)
+# psi = exp(-(X-sep)**2/2) + exp(-(X+sep)**2/2) + 0j
 
 def V(psi):
     rho = psi*psi.conj()
@@ -50,14 +40,12 @@ def evolve():
     psi_k = fft(psi)
 
 S = N
-T = 150
-L = 10
+T = 250
+L = 4
 
 A = matrix(zeros(dtype=complex,shape=(L*T,S)))
 for l in range(L):
-    fr = 0.991 + l*0.002
-    if L==1:
-        fr = 1
+    fr = 0.997 + l*0.002
     print(fr)
     psi = exp(-(X-sep)**2/2) + fr*exp(-(X+sep)**2/2) + 0j
     for t in range(T):
@@ -73,7 +61,7 @@ for r in range(len(sigVT)):
     norm = f[0,0]**(-0.5)
     VT[r] = norm * sigVT[r]
 
-B = 16
+B = 64
 Phi = matrix(zeros(dtype=complex,shape=(B,S)))
 
 for b in range(B):
@@ -83,10 +71,10 @@ Gal = A*Phi.conj().T
     
 dGal = 0*Gal
 for l in range(L):
-    dGal[l*T,:] = Gal[l*T+1,:] - Gal[l*T,:]
-    dGal[l*T+1:(l+1)*T-1,:] = \
-        (Gal[l*T+2:(l+1)*T,:]-Gal[l*T:(l+1)*T-2,:])/2
-    dGal[(l+1)*T-1,:] = Gal[(l+1)*T-1,:] - Gal[(l+1)*T-2,:]
+    lo,hi = l*T,(l+1)*T
+    dGal[lo,:] = Gal[lo+1,:] - Gal[lo,:]
+    dGal[lo+1:hi-1,:] = (Gal[lo+2:hi,:]-Gal[lo:hi-2,:])/2
+    dGal[hi-1,:] = Gal[hi-1,:] - Gal[hi-2,:]
 
 # Interpolation
 
@@ -116,7 +104,7 @@ def deriv(galt):
         f[0,b] = tree[b](rgalt)[0]
     return f
     
-A = matrix(zeros(dtype=complex,shape=(T,S)))
+Aa = matrix(zeros(dtype=complex,shape=(T,S)))
 sim = matrix(zeros(dtype=complex,shape=(T,B))) 
 
 psi = exp(-(X-sep)**2/2) + exp(-(X+sep)**2/2) + 0j
@@ -131,7 +119,7 @@ for t in range(1,T-1):
 Ab = sim*Phi
 
 for t in range(T):
-    A[t,:] = 1*psi
+    Aa[t,:] = 1*psi
     evolve()
 
 # Now animate everything!
@@ -153,9 +141,10 @@ def grinit():
     curvV = panelV.plot(X,V(psi),color='red')[0]
 
 def frame(t):
-    psi = array(A[t%T,:]-Ab[t%T,:])[0]
+    psi = array(Aa[t%T,:]-Ab[t%T,:])[0]
+#    psi = array(A[t%T,:]-A[t%T+T,:])[0]
     maxx = max(abs(psi))
-#    panelx.set_ylim(-maxx,maxx)
+    panelx.set_ylim(-maxx,maxx)
     curvx_re.set_ydata(psi.real)
     curvx_im.set_ydata(psi.imag)
     curvV.set_ydata(V(psi))
