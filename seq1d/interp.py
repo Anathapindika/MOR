@@ -6,10 +6,10 @@ N = 100
 B = 3
 
 g = np.ndarray(shape=(N,B))
-v = np.ndarray(shape=(N))
+v = np.ndarray(dtype=complex,shape=(N))
 
 def fun(x):
-    return 100*x[0] + 10*x[1] + x[2]
+    return 100*x[0] + 10*x[1] + 1j*x[2]
 
 for n in range(N):
     r = npr.sample(B)

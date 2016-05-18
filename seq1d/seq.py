@@ -68,20 +68,53 @@ for r in range(len(sigVT)):
 
 B = 16
 Phi = matrix(zeros(dtype=complex,shape=(B,S)))
+
 for b in range(B):
     Phi[b,:] = VT[-1-b,:]
 
 Gal = A*Phi.conj().T    
 Ab = Gal*Phi
     
-#Phitld = 0*Phi
-#    lapl = (Phi[b,:-2] + Phi[b,2:] - 2*Phi[b,1:-1])/(X[1]-X[0])**2
-#    Phitld[b,1:-1] = lapl - V[1:-1]*Phi[b,1:-1]
-#H = zeros(dtype=complex,shape=(B,B))
-#for k in range(B):
-#    for l in range(B):
-#        H[k,l] = np.sum(Phi[k].conj()*Phitld[l])
-# print(H)
+dGal = 0*Gal
+dGal[0,:] = Gal[1,:] - Gal[0,:]
+dGal[1:-1,:] = (Gal[2:,:]-Gal[:-2,:])/2
+dGal[-1,:] = Gal[-1,:] - Gal[-2,:]
+
+# Interpolation
+
+from scipy.interpolate import NearestNDInterpolator
+
+def realise(gal):
+    T,B = gal.shape
+    rgal = zeros(shape=(T,2*B))
+    for b in range(B):
+        galb = array(Gal[:,b])[0]
+        rgal[:,2*b] = galb.real
+        rgal[:,2*b+1] = galb.imag
+    return rgal
+    
+rgal = realise(Gal)
+
+tree = []
+for b in range(B):
+    dgb = array(dGal[:,b])[:,0]
+    f = NearestNDInterpolator(rgal,dgb)
+    tree.append(f)
+
+    
+def deriv(galt):
+    f = matrix(zeros(dtype=complex,shape=(1,B)))
+    rgalt = realise(galt)
+    for b in range(B):
+        f[0,b] = tree[b](rgalt)[0]
+    return f
+        
+sim = 0*Gal
+sim[0:2,:] = Gal[0:2,:]
+for t in range(1,T-1):
+    sim[t+1,:] = sim[t-1,:] + 2*dGal[t,:] #deriv(sim[t,:])
+
+Ab = sim*Phi
 
 # Now animate everything!
 
@@ -102,7 +135,7 @@ def grinit():
     curvV = panelV.plot(X,V(psi),color='red')[0]
 
 def frame(t):
-    psi = array(A[t%T]-Ab[t%T])[0,:]
+    psi = array(A[t%T,:]-Ab[t%T,:])[0]
     maxx = max(abs(psi))
     panelx.set_ylim(-maxx,maxx)
     curvx_re.set_ydata(psi.real)
