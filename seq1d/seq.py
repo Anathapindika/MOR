@@ -50,7 +50,7 @@ def evolve():
     psi_k = fft(psi)
 
 S = N
-T = 10
+T = 100
 
 A = matrix(zeros(dtype=complex,shape=(T,S)))
 for t in range(T):
@@ -66,7 +66,7 @@ for r in range(len(sigVT)):
     norm = f[0,0]**(-0.5)
     VT[r] = norm * sigVT[r]
 
-B = 3
+B = 16
 Phi = matrix(zeros(dtype=complex,shape=(B,S)))
 
 for b in range(B):
@@ -87,24 +87,16 @@ from scipy.interpolate import NearestNDInterpolator
 def realise(gal):
     T,B = gal.shape
     rgal = zeros(shape=(T,2*B))
-    print(gal.shape,rgal.shape)
     for b in range(B):
         galb = array(gal[:,b])[:,0]
-#        print(gal[:,b])
-#        print(galb)
         rgal[:,2*b] = galb.real
         rgal[:,2*b+1] = galb.imag
-#    print(gal[1,:])
-#    print(rgal[1,:])
     return rgal
     
 rgal = realise(Gal)
-# print(Gal[1,:])
-# print(rgal[1,:])
 tree = []
 for b in range(B):
     dgb = array(dGal[:,b])[:,0]
-#    print(dgb[1])
     f = NearestNDInterpolator(rgal,dgb)
     tree.append(f)
 
@@ -119,13 +111,10 @@ def deriv(galt):
 sim = 0*Gal
 sim[0:2,:] = Gal[0:2,:]
 for t in range(1,T-1):
-    sim[t+1,:] = sim[t-1,:] + 2*dGal[t,:] #deriv(sim[t,:])
     sim[t+1,:] = sim[t-1,:] + 2*deriv(sim[t,:])
-#    print(sim[t,:])
-#    print(dGal[t,:])
-#    print(deriv(sim[t,:]))
 
-#Ab = sim*Phi
+
+Ab = sim*Phi
 
 # Now animate everything!
 
