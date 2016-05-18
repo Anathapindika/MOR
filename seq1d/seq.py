@@ -66,7 +66,7 @@ for r in range(len(sigVT)):
     norm = f[0,0]**(-0.5)
     VT[r] = norm * sigVT[r]
 
-B = 16
+B = 32
 Phi = matrix(zeros(dtype=complex,shape=(B,S)))
 
 for b in range(B):
@@ -110,11 +110,22 @@ def deriv(galt):
         
 sim = 0*Gal
 sim[0:2,:] = Gal[0:2,:]
+
+psi = exp(-(X-sep)**2/2) + 1*exp(-(X+sep)**2/2) + 0j
+
+phim = matrix(zeros(dtype=complex,shape=(1,S)))
+phim[0,:] = psi
+sim[0,:] = phim*Phi.conj().T
+
+sim[1,:] = sim[0,:] + deriv(sim[0,:])
 for t in range(1,T-1):
     sim[t+1,:] = sim[t-1,:] + 2*deriv(sim[t,:])
 
-
 Ab = sim*Phi
+
+for t in range(T):
+    A[t,:] = 1*psi
+    evolve()
 
 # Now animate everything!
 
