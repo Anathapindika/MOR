@@ -1,44 +1,58 @@
 # First we redefine fft and ifft to automate wrap/unwrap.
 
-import scipy.fftpack as scf
+#import scipy.fftpack as scf
+#def fft(fx):
+#    return scf.fftshift(scf.fft(scf.fftshift(fx))) 
+#def ifft(fk):
+#    return scf.fftshift(scf.ifft(scf.fftshift(fk)))
+#
 
-def fft(fx):
-    return scf.fftshift(scf.fft(scf.fftshift(fx)))
-
-def ifft(fk):
-    return scf.fftshift(scf.ifft(scf.fftshift(fk)))
+from scipy.fftpack import fft, ifft
 
 # Set up the grid in x and k.
 
 import numpy as np
 from numpy import arange, pi, exp, array, matrix, zeros
 
-N = 2**6             # Assumed a power of two.
+N = 2**12             # Assumed a power of two.
 R = (pi*N/2)**.5     # Arbitrary, but this choice makes x and k ranges equal.
-step = 2*R/N
-X = (arange(N)-N/2)*step
-K = 2*pi/N*(arange(N)-N/2)/step
+dx = 2*R/N
+X = (arange(N)-N/2)*dx
+dk = 2*pi/(N*dx)
+K = (arange(N)-N/2)*dk
+print(K)
+K[:N/2],K[N/2:] = 1*K[N/2:],1*K[:N/2]
+print(K)
 
 # Choose potential and initial conditions.
 
-V = X**2
-psi = exp(-X**2/2)+0j
+#V = X**2
+sep = X[-1]/4
+psi = exp(-(X-sep)**2/2) + 0.5*exp(-(X+sep)**2/2) + 0j
 psi_k = fft(psi)
+
+def V(psi):
+    rho = psi*psi.conj()
+    phi_k = fft(rho)
+    phi = abs(phi_k)
+    phi_k[1:] /= -K[1:]**2
+    phi = ifft(phi_k).real
+    return phi
 
 # The semi-spectral method for the time-dependent Schroedinger equation.
 
 def evolve():
     delta_t = 0.05
     global psi,psi_k
-    psi *= exp(1j*V*delta_t/2)
+    psi *= exp(1j*V(psi)*delta_t/2)
     psi_k = fft(psi)
     psi_k *= exp(1j*K*K*delta_t)
     psi = ifft(psi_k)
-    psi *= exp(1j*V*delta_t/2)
+    psi *= exp(1j*V(psi)*delta_t/2)
     psi_k = fft(psi)
 
 S = N
-T = 30
+T = 1000
 
 A = matrix(zeros(dtype=complex,shape=(T,S)))
 for t in range(T):
@@ -54,64 +68,57 @@ for r in range(len(sigVT)):
     norm = f[0,0]**(-0.5)
     VT[r] = norm * sigVT[r]
 
-B = 3
+B = 5
 Phi = zeros(dtype=complex,shape=(B,S))
 Phitld = 0*Phi
 for b in range(B):
     Phi[b] = array(VT[-1-b])[0]
-    lapl = (Phi[b,:-2] + Phi[b,2:] - 2*Phi[b,1:-1])/(X[1]-X[0])**2
-    Phitld[b,1:-1] = lapl - V[1:-1]*Phi[b,1:-1]
+#    lapl = (Phi[b,:-2] + Phi[b,2:] - 2*Phi[b,1:-1])/(X[1]-X[0])**2
+#    Phitld[b,1:-1] = lapl - V[1:-1]*Phi[b,1:-1]
 
 H = zeros(dtype=complex,shape=(B,B))
 for k in range(B):
     for l in range(B):
         H[k,l] = np.sum(Phi[k].conj()*Phitld[l])
-print(H)
+# print(H)
 
 # Now animate everything!
 
-from pylab import figure, plot, show
+from matplotlib.pyplot import figure, show
 from matplotlib.animation import FuncAnimation
 
 def grinit():
-    global fig,panelx,panelk,curvx_re,curvx_im,curvk_re,curvk_im
+    global fig,panelx,panelk,curvx_re,curvx_im,curvV
     fig.subplots_adjust(hspace=0.3)
     panelx = fig.add_subplot(211,axisbg='black')
     panelx.set_xlabel('position')
     panelx.set_xlim(X[0],X[-1])
     curvx_re = panelx.plot(X,psi.real,color='white',lw=3)[0]
     curvx_im = panelx.plot(X,psi.imag,color='magenta',lw=3)[0]
-#    panelk = fig.add_subplot(212,axisbg='black')
-#    panelk.set_xlabel('momentum')
-#    panelk.set_xlim(K[0],K[-1])
-#    curvk_re = panelk.plot(K,psi_k.real,color='white',lw=3)[0]
-#    curvk_im = panelk.plot(K,psi_k.imag,color='magenta',lw=3)[0]
+    panelV = fig.add_subplot(212,axisbg='black')
+    panelV.set_xlabel('potential')
+    panelV.set_xlim(X[0],X[-1])
+    curvV = panelV.plot(X,V(psi),color='red')[0]
 
 def frame(t):
-    print(t)
-    print(A.shape)
     psi = array(A[t%T])[0,:]
-    print(psi.shape)
     maxx = max(abs(psi))
-#    maxk = max(abs(psi_k))
     panelx.set_ylim(-maxx,maxx)
-#    panelk.set_ylim(-maxk,maxk)
     curvx_re.set_ydata(psi.real)
     curvx_im.set_ydata(psi.imag)
-#    curvk_re.set_ydata(psi_k.real)
-#    curvk_im.set_ydata(psi_k.imag)
+    curvV.set_ydata(V(psi))
 
 fig = figure()
-#dummy = FuncAnimation(fig, frame, init_func=grinit, interval=25)
+dummy = FuncAnimation(fig, frame, init_func=grinit, interval=25)
 
-fig.subplots_adjust(hspace=0.3)
-panelx = fig.add_subplot(211)
-panelx.set_xlabel('position')
-panelx.set_xlim(X[0],X[-1])
-for b in range(2,3):
-    Y = Phi[b]
-    panelx.plot(X,Y.real)
-    panelx.plot(X,Y.imag)
+#fig.subplots_adjust(hspace=0.3)
+#panelx = fig.add_subplot(211)
+#panelx.set_xlabel('position')
+#panelx.set_xlim(X[0],X[-1])
+#for b in range(B):
+#    Y = Phi[b]
+#    panelx.plot(X,Y.real)
+#    panelx.plot(X,Y.imag)
 
 show()
 
