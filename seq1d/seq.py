@@ -20,15 +20,13 @@ dx = 2*R/N
 X = (arange(N)-N/2)*dx
 dk = 2*pi/(N*dx)
 K = (arange(N)-N/2)*dk
-print(K)
 K[:N/2],K[N/2:] = 1*K[N/2:],1*K[:N/2]
-print(K)
 
 # Choose potential and initial conditions.
 
 #V = X**2
 sep = X[-1]/4
-psi = exp(-(X-sep)**2/2) + 0.5*exp(-(X+sep)**2/2) + 0j
+psi = exp(-(X-sep)**2/2) + exp(-(X+sep)**2/2) + 0j
 psi_k = fft(psi)
 
 def V(psi):
@@ -52,7 +50,7 @@ def evolve():
     psi_k = fft(psi)
 
 S = N
-T = 1000
+T = 100
 
 A = matrix(zeros(dtype=complex,shape=(T,S)))
 for t in range(T):
@@ -68,18 +66,21 @@ for r in range(len(sigVT)):
     norm = f[0,0]**(-0.5)
     VT[r] = norm * sigVT[r]
 
-B = 5
-Phi = zeros(dtype=complex,shape=(B,S))
-Phitld = 0*Phi
+B = 16
+Phi = matrix(zeros(dtype=complex,shape=(B,S)))
 for b in range(B):
-    Phi[b] = array(VT[-1-b])[0]
+    Phi[b,:] = VT[-1-b,:]
+
+Gal = A*Phi.conj().T    
+Ab = Gal*Phi
+    
+#Phitld = 0*Phi
 #    lapl = (Phi[b,:-2] + Phi[b,2:] - 2*Phi[b,1:-1])/(X[1]-X[0])**2
 #    Phitld[b,1:-1] = lapl - V[1:-1]*Phi[b,1:-1]
-
-H = zeros(dtype=complex,shape=(B,B))
-for k in range(B):
-    for l in range(B):
-        H[k,l] = np.sum(Phi[k].conj()*Phitld[l])
+#H = zeros(dtype=complex,shape=(B,B))
+#for k in range(B):
+#    for l in range(B):
+#        H[k,l] = np.sum(Phi[k].conj()*Phitld[l])
 # print(H)
 
 # Now animate everything!
@@ -101,7 +102,7 @@ def grinit():
     curvV = panelV.plot(X,V(psi),color='red')[0]
 
 def frame(t):
-    psi = array(A[t%T])[0,:]
+    psi = array(A[t%T]-Ab[t%T])[0,:]
     maxx = max(abs(psi))
     panelx.set_ylim(-maxx,maxx)
     curvx_re.set_ydata(psi.real)
