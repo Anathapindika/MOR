@@ -128,13 +128,14 @@ from matplotlib.pyplot import figure, show
 from matplotlib.animation import FuncAnimation
 
 def grinit():
-    global fig,panelx,panelk,curvx_re,curvx_im,curvV
+    global fig,panelx,panelk,curvx_re,curvx_im,curv,curvV
     fig.subplots_adjust(hspace=0.3)
     panelx = fig.add_subplot(211,axisbg='black')
     panelx.set_xlabel('position')
     panelx.set_xlim(X[0],X[-1])
-    curvx_re = panelx.plot(X,psi.real,color='white',lw=3)[0]
-    curvx_im = panelx.plot(X,psi.imag,color='magenta',lw=3)[0]
+    curvx_re = panelx.plot(X,psi.real,color='cyan',lw=2)[0]
+    curvx_im = panelx.plot(X,psi.imag,color='magenta',lw=2)[0]
+    curv = panelx.plot(X,abs(psi)**2,color='white',lw=3)[0]
     panelV = fig.add_subplot(212,axisbg='black')
     panelV.set_xlabel('potential')
     panelV.set_xlim(X[0],X[-1])
@@ -147,6 +148,7 @@ def frame(t):
     panelx.set_ylim(-maxx,maxx)
     curvx_re.set_ydata(psi.real)
     curvx_im.set_ydata(psi.imag)
+    curv.set_ydata(abs(psi)**2)
     curvV.set_ydata(V(psi))
 
 fig = figure()
