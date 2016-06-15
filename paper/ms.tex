@@ -24,10 +24,30 @@ Zurich, Switzerland \\ }
 \end{keywords}
 
 \section{Introduction}
-
+Even though there is a rapid speed-up in computer performance, many real-life systems face challenges in numerical simulations. One of these challenges is the computation of the quantum mechanical wave function. Even for rather simple atoms the simulation of the behaviour of its constituents gets unmanageable [1] and there is a necessity for a reduced order model. Also, recent paper indicates that theoretical dark matter particles may underlie a macroscopic quantum mechanical description. 
 As a simple but non-trivial example, we use the nonlinear
 Schr\"odinger equation, which has been studied by several groups as
-model for structure formation\cite{1993ApJ...416L..71W}.
+model for structure formation\cite{1993ApJ...416L..71W} and apply the proper orthogonal decomposition (POD) and its use with the Galerkin-projection.\t
+Although the POD is a widely used method in the description of fluid dynamics [2] there are only two papers where the POD was applied to the Schr\"odinger equation [3] [4] - in this paper we are focusing on the non-linear Schr\"odinger equation with a self induced Poisson potential. \citep{www.goog.e}
+
+
+\section{Non Linear Schr\"odinger Equation}
+The time dependent non-linear Schrodinger (NLS) equation emerges as a model describing the dynamics of wave packets in fibre optics, in the Bose-Einstein condensate theory and may predict the behaviour of the theoretical dark matter particle, the axion, by following equation.
+
+
+\begin{equation} \label{eq1}
+\begin{split}
+i\dfrac {\partial } {\partial t}\psi\left( \overrightarrow{x},t\right) =\left( -\dfrac {\nabla ^{2}} {2}+ \xi f\left( \left| \psi\left( \overrightarrow {x},t\right) \right| ^{2}\right) \right) \psi\left( \overrightarrow {x},t\right)
+\end{split}
+\end{equation}
+where \(f\left( \left| \psi \left( \overrightarrow {x},t\right) \right| ^{2}\right)\) is the solution of the Poisson equtaion
+
+\begin{equation} \label{eq2}
+\nabla \rho =\left| \psi\left( \overrightarrow {x},t\right) \right| ^{2}
+\end{equation}
+
+
+
 
 \bibliographystyle{mn2e}
 
@@ -38,6 +58,13 @@ model for structure formation\cite{1993ApJ...416L..71W}.
 \def\nat{Nature}
 
 \bibliography{many}
+
+\begin{thebibliography}
+\bibitem{einstein} 
+\textit{Zur Elektrodynamik bewegter K{\"o}rper}. (German) 
+[\textit{On the electrodynamics of moving bodies}]. 
+Annalen der Physik, 322(10):891–921, 1905.
+\end{thebibliography}
 
 \end{document}
 
