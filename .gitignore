@@ -41,3 +41,13 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# TeX stuff
+*.log
+*.aux
+*.bbl
+*.blg
+*~
+ms.synctex.gz
+ms.pdf
+
