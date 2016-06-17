@@ -60,7 +60,7 @@ i\dfrac {\partial } {\partial t}\widetilde{\psi}( \overrightarrow{x},t) = \dfrac
 
 you end up with a solvable system of equation. For a detailed look on this method we are recommending [XX]
 
-\section{POD}
+\section{POD and the Galerkin projection}
 Since the above mentioned method requires to compute the Fourier transform and its inverse every time-step, the simulation gets quite expensive by increasing the spatial resolution. We are therefore trying to provide a brief introduction to the POD
 \footnote{For a complimentary reading of this subject we are recommending the fantastic article of A. Chatterjee} which reduces eq \ref{eq1} to an ordinary differential equation of the form 
 
@@ -71,10 +71,10 @@ Since the above mentioned method requires to compute the Fourier transform and i
 Where G is a function depending solely on \(\overrightarrow{a}\) and some external values denoted as V. The premise to achieve this reduction - and therefore of this paper - is the approximation of the wave function \(\psi( \overrightarrow {x},t)\) as following sum:
 
 \begin{equation}\label{eq7}
-\psi( \overrightarrow {x},t) = \sum_{i=0}^M \alpha_i(t) \phi_i(\overrightarrow{x}) 
+\psi( \overrightarrow {x},t) = \sum_{i=0}^M \alpha_i(t) \varphi_i(\overrightarrow{x}) 
 \end{equation} 
 
-There are many types of this factorization. One could choose for example the Legendre polynomials or the Fourier series where for each of these choices, both the time-dependent function \(\alpha_i(t)\) and the spatial dependent function \(\phi_i(\overrightarrow{x})\) would change. In this paper \(\phi_i(\overrightarrow{x})\) is denoted the \(\i_{th}\) vector of an orthonormal basis, the so called the POD-Modes. The original concept of the POD goes back to Pearson (1901) with the principal component analysis. The POD is also known as the Karhunen-Loève decomposition or the singular value decomposition (SVD) (for a detailed discussion about the connection between the PCA, KLD and the SVD, see [5]). The main goal of the POD can be formulated as follows: \textit{to find a basis of a subspace that optimally describes a set of data in a least square sense}. \\
+There are many types of this factorization. One could choose for example the Legendre polynomials or the Fourier series where for each of these choices, both the time-dependent function \(\alpha_i(t)\) and the spatial dependent function \(\varphi_i(\overrightarrow{x})\) would change. In this paper \(\varphi_i(\overrightarrow{x})\) is denoted the \(\i_{th}\) vector of an orthonormal basis, the so called the POD-Modes. The original concept of the POD goes back to Pearson (1901) with the principal component analysis. The POD is also known as the Karhunen-Loève decomposition or the singular value decomposition (SVD) (for a detailed discussion about the connection between the PCA, KLD and the SVD, see [5]). The main goal of the POD can be formulated as follows: \textit{to find a basis of a subspace that optimally describes a set of data in a least square sense}. \\
 This can be shown by considering the wavefunction  \(\psi( \overrightarrow {x},t)\) evaluated at N grid points and at M time steps. These state variables are inserted into a data matrix \(A \in \mathbb{C}^{MxN}\) in a way such that the element \(A_{ij}\) denotes the amplitude of the wave function at the \(\i_{th}\) time and the \(\j_{th}\) grid point.\footnote{Remark that this arrangement of the time coordinate can be arbitrary. Later on, we will insert data from several evaluation with varying initial parameters and A therefore will not be chronological in i.}
 The SVD now states that for every such matrix there exists a factorization
 %Habe hier die Elementweise decomposition wieder rausgenommen, fand ich zu unübersichtlich
@@ -86,7 +86,7 @@ Where \(U \in \mathbb{C}^{MxN} \) is a unitary matrix, \(V \in \mathbb{C}^{MxN} 
 \begin{equation}\label{eq9}
 A=\sum_{i=1}^M \overrightarrow{u}_i \sigma_i \overrightarrow{v}_i^*
 \end{equation} 
-Comparing this \ref{eq7} yields to \(\alpha_i(t) \equiv \overrightarrow{u}_i \sigma_i \) and \(\phi_i(\overrightarrow{x}) \equiv \overrightarrow{v}_i^*\). In this arrangement of A, the function \(\alpha_i(t)\) evaluated in the time resolution where A was produced is represented by \(\overrightarrow{u}_i \sigma_i \). The same holds true for the POD-Modes \(\phi_i(\overrightarrow{x})\) and \(\overrightarrow{v}_i^*\) in the spatial resolution. This is the connection between POD and SVD. Two remarks we want to highlight here.
+Comparing this \ref{eq7} yields to \(\alpha_i(t) \equiv \overrightarrow{u}_i \sigma_i \) and \(\varphi_i(\overrightarrow{x}) \equiv \overrightarrow{v}_i^*\). In this arrangement of A, the function \(\alpha_i(t)\) evaluated in the time resolution where A was produced is represented by \(\overrightarrow{u}_i \sigma_i \). The same holds true for the POD-Modes \(\varphi_i(\overrightarrow{x})\) and \(\overrightarrow{v}_i^*\) in the spatial resolution. This is the connection between POD and SVD. Two remarks we want to highlight here.
 
 The first lies in the possibility of a low rank approximation of the matrix A. For any \(k<r\) there is a corresponding \(\widetilde{\Sigma} \in \mathbb{R}^{kxk} \) such that \(\sigma_1 \geq \dots \geq \sigma_k \geq \sigma_{k+1} = \dots = \sigma_r =0\) and its reduced low ranked data matrix \(\\widetilde{A} \in \mathbb{C}^{MxN} \) is as follows
 \begin{equation}\label{eq10}
@@ -94,17 +94,23 @@ The first lies in the possibility of a low rank approximation of the matrix A. F
 \end{equation} 
 The above mentioned optimality in the least square sense can now be seen that no other k-ranked matrix minimizes better the Forbenius norm \(\| A-\widetilde{A} \|\).\footnote{For a full proove see Gloub G. H  Matrix Computation S. 72}
 
- As second remark, there is no need in inserting just one evaluation of the wave function into the data matrix A. There can be a large input set with different initial and/or boundary conditions. Rather than trying to reduce one wave function, the goal of this paper will be to extract a basis which sufficiently  describes a whole system of wave functions - and ultimately, describing ones with new parameter which are not included in the data set. For this let \(\phi_i(\overrightarrow{x})\) be the \(i_{th}\) POD-Mode\footnote{In the discrete form (SVD) the POD-modes should be replaced by the column of the V matrix in \ref{eq8}, the Integral by a summation, etc}
+ As second remark, there is no need in inserting just one evaluation of the wave function into the data matrix A. There can be a large input set with different initial and/or boundary conditions. Rather than trying to reduce one wave function, the goal of this paper will be to extract a basis which sufficiently  describes a whole system of wave functions - and ultimately, describing ones with new parameter which are not included in the data set. For this let \(\varphi_i(\overrightarrow{x})\) be the \(i_{th}\) POD-Mode\footnote{In the discrete form (SVD) the POD-modes should be replaced by the column of the V matrix in \ref{eq8}, the Integral by a summation, etc}
  of such a data set. As already mentioned the POD-Modes are orthonormal, i.e.
  \begin{equation}\label{eq11}
-\int_{-\infty}^\infty \phi_i(\overrightarrow{x})  \phi_j(\overrightarrow{x})^* d\overrightarrow{x} = \delta_{ij} 
+\int_{-\infty}^\infty \varphi_i(\overrightarrow{x})  \varphi_j(\overrightarrow{x})^* d\overrightarrow{x} = \delta_{ij} 
 \end{equation} 
 To find the components \(\alpha_i(t_0)\) which describes an arbitrary frame \(\Psi(\overrightarrow{x},t_0)\) the best, this orthonormal condition \ref{eq11} and the premise \ref{eq7} is used to receive them directly
  \begin{equation}\label{eq12}
-\alpha_i(t_0) =\int_{-\infty}^\infty \Psi(\overrightarrow{x},t_0) \phi_i(\overrightarrow{x})^* d\overrightarrow{x}
+\alpha_i(t_0) =\int_{-\infty}^\infty \Psi(\overrightarrow{x},t_0) \varphi_i(\overrightarrow{x})^* d\overrightarrow{x}
 \end{equation} 
 
-\section{Galerkin projection}
+The dynamics of the components \(\alpha_i(t)\) are covert in the \textit{Galerkin projection}. For this we insert the premise \ref{eq7} into the main equation \ref{eq1}. This yields to
+
+ \begin{equation}\label{eq12}
+\sum_{i=0}^M \varphi_i(\overrightarrow{x}) \dfrac {\partial } {\partial t} \alpha_i(t) =( -\dfrac {\nabla ^{2}} {2}+ \xi \rho) \psi( \overrightarrow {x},t)d\overrightarrow{x}
+\end{equation} 
+
+
 
 \bibliographystyle{mn2e}
 
