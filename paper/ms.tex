@@ -25,10 +25,10 @@ Physik-Institut, University of Zurich, Winterthurerstr~190, 8057 Zurich, Switzer
 Even though there is a rapid speed-up in computer performance, many real-life systems face challenges in numerical simulations. One of these challenges is the computation of the quantum mechanical wave function. Even for rather simple atoms the simulation of the behaviour of its constituents gets unmanageable and there is a necessity for a reduced order model. Also, recent paper indicates that theoretical dark matter particles may underlie a macroscopic quantum mechanical description. 
 As a simple but non-trivial example, we use the nonlinear
 Schr\"odinger (NLS) equation, which has been studied by several groups as
-model for structure formation\cite{1993ApJ...416L..71W} and apply the proper orthogonal decomposition (POD) and its use with the Galerkin-projection.\t
-Although the POD is a widely used method in the description of fluid dynamics, [2] it seems to be that there are only two papers where the POD was applied to the Schr\"odinger equation [3] [4]. In this paper we are focusing on the NLS equation with a self induced Poisson potential solve it with the split step Fourier method (SSM) and approximate it finally via POD. 
+model for structure formation\cite{1993ApJ...416L..71W} and apply the proper orthogonal decomposition (POD) and its use with the Galerkin-projection. 
+Although the POD is a widely used method in the description of fluid dynamics, [2] it seems to be that there are only two papers where the POD was applied to the Schr\"odinger equation [3] [4]. In this paper we are focusing on the NLS equation with a self induced Poisson potential solve it with the split step Fourier method (SSM) and approximate new wave functions finally via POD. 
 \section{NLS and the SSM}
-The time dependent non-linear Schrodinger (NLS) equation emerges as a model describing the dynamics of wave packets in fibre optics, in the Bose-Einstein condensate theory and may predict the behaviour of the theoretical dark matter particle, the axion. It can be formulated by following equation.
+The time dependent NLS emerges as a model describing the dynamics of wave packets in fibre optics, in the Bose-Einstein condensate theory and may predict the behaviour of the theoretical dark matter particle, the axion. It can be formulated by following equation.
 
 
 \begin{equation} \label{eq1}
@@ -42,39 +42,69 @@ where \(\xi\) is a parameter describing if the equation is focusing (\(\xi\)\tex
 \nabla \rho =\left| \psi\left( \overrightarrow {x},t\right) \right| ^{2}
 \end{equation}
 
-An ellegant way of solving (\ref{eq1}) is through the Fourier split step method where the equation gets split into the two parts:
+An elegant way of solving (\ref{eq1}) is through the Fourier split step method where the equation gets split into the two parts:
 
-\begin{equation} \label{eq4}
+\begin{equation} \label{eq3}
 i\dfrac {\partial } {\partial t}\psi( \overrightarrow{x},t) = \xi  \rho  \psi( \overrightarrow {x},t)
 \end{equation}
 
-\begin{equation} \label{eq5}
+\begin{equation} \label{eq4}
 i\dfrac {\partial } {\partial t}\psi( \overrightarrow{x},t) = -\dfrac {\nabla ^{2}} {2} \psi( \overrightarrow {x},t)
 \end{equation}
 
 By introducing the Fouriertransform \(\widetilde{\psi} (\overrightarrow {k},t)\) of \(\psi (\overrightarrow {x},t)\) in \ref{eq5} 
 
-\begin{equation} \label{eq6}
+\begin{equation} \label{eq5}
 i\dfrac {\partial } {\partial t}\widetilde{\psi}( \overrightarrow{x},t) = \dfrac {k ^{2}} {2} \widetilde{\psi}( \overrightarrow {x},t)
 \end{equation}
 
 you end up with a solvable system of equation. For a detailed look on this method we are recommending [XX]
 
 \section{POD}
-Since the above method requires to compute the fourier transform and its inverse every time-step, the simulation gets quite expensive by increasing the spatial resolution. We are therefore trying to provide a brief introduction to the POD which reduces eq \ref{eq1} to an ordinary differential equation of the form 
+Since the above mentioned method requires to compute the Fourier transform and its inverse every time-step, the simulation gets quite expensive by increasing the spatial resolution. We are therefore trying to provide a brief introduction to the POD
+\footnote{For a complimentary reading of this subject we are recommending the fantastic article of A. Chatterjee} which reduces eq \ref{eq1} to an ordinary differential equation of the form 
 
-\begin{equation}\label{eq7}
+\begin{equation}\label{eq6}
 \dfrac {\partial } {\partial t} \overrightarrow{a} = G( \overrightarrow{a},V)
 \end{equation} 
 
-Where G is a function depending solely on \(\overrightarrow{a}\) and some external values denoted as V. The premise to achieve this reduction is the approximation of the wave function \(\psi( \overrightarrow {x},t)\) as a  sum
+Where G is a function depending solely on \(\overrightarrow{a}\) and some external values denoted as V. The premise to achieve this reduction - and therefore of this paper - is the approximation of the wave function \(\psi( \overrightarrow {x},t)\) as following sum:
 
-\begin{equation}\label{eq8}
+\begin{equation}\label{eq7}
 \psi( \overrightarrow {x},t) = \sum_{i=0}^M \alpha_i(t) \phi_i(\overrightarrow{x}) 
 \end{equation} 
 
-There are many types of this factorization. One could choose for example the Legendre polynomials or the Fourier series where for each of these choices, both the time-dependent function \(\alpha_i(t)\) and the spatial dependent function \(\phi(\overrightarrow{x})\) would change. In this paper \(\phi(\overrightarrow{x})\)is denoted as orthonormal basis called the POD-Modes. The original concept of the POD goes back to Pearson (1901) with the principal component analysis. The POD is also known as the Karhunen-Loève decomposition or the singular value decomposition (SVD) (for a detailed discussion about the connection between the PCA, KLD and the SVD, see [5]). The main goal of the POD can be formulated as follows: \textit{to find a basis of a subspace that optimally describes a set of data in a least square sense}. 
-This can be seen by considering the wavefunction  \(\psi( \overrightarrow {x},t)\) evaluated at N grid points and at M time steps. These state variables are inserted into a data matrix A where the element \(A_{ij}\) denotes the amplitude of the wave function at the ith time and the jth grid point.
+There are many types of this factorization. One could choose for example the Legendre polynomials or the Fourier series where for each of these choices, both the time-dependent function \(\alpha_i(t)\) and the spatial dependent function \(\phi_i(\overrightarrow{x})\) would change. In this paper \(\phi_i(\overrightarrow{x})\) is denoted the \(\i_{th}\) vector of an orthonormal basis, the so called the POD-Modes. The original concept of the POD goes back to Pearson (1901) with the principal component analysis. The POD is also known as the Karhunen-Loève decomposition or the singular value decomposition (SVD) (for a detailed discussion about the connection between the PCA, KLD and the SVD, see [5]). The main goal of the POD can be formulated as follows: \textit{to find a basis of a subspace that optimally describes a set of data in a least square sense}. \\
+This can be shown by considering the wavefunction  \(\psi( \overrightarrow {x},t)\) evaluated at N grid points and at M time steps. These state variables are inserted into a data matrix \(A \in \mathbb{C}^{MxN}\) in a way such that the element \(A_{ij}\) denotes the amplitude of the wave function at the \(\i_{th}\) time and the \(\j_{th}\) grid point.\footnote{Remark that this arrangement of the time coordinate can be arbitrary. Later on, we will insert data from several evaluation with varying initial parameters and A therefore will not be chronological in i.}
+The SVD now states that for every such matrix there exists a factorization
+%Habe hier die Elementweise decomposition wieder rausgenommen, fand ich zu unübersichtlich
+%A = \sum_{\nu=1}^M \sum_{\mu=1}^M U_{i\nu} \Sigma_{\nu \mu} V_{\mu j}
+\begin{equation}\label{eq8}
+A=U\Sigma V^*
+\end{equation} 
+Where \(U \in \mathbb{C}^{MxN} \) is a unitary matrix, \(V \in \mathbb{C}^{MxN} \) is a unitary matrix where * denotes the conjugate transpose and \(\Sigma \in \mathbb{R}^{MxM} \) is a diagonal matrix with \(r=min(M,N)\) non-negative real values \(\sigma_i\) on the diagonal. These so-called singular values are arranged in decreasing order such that \(\sigma_1 \geq \dots \geq \sigma_r \geq 0\). Rewriting \ref{eq8} via outer-product leads to 
+\begin{equation}\label{eq9}
+A=\sum_{i=1}^M \overrightarrow{u}_i \sigma_i \overrightarrow{v}_i^*
+\end{equation} 
+Comparing this \ref{eq7} yields to \(\alpha_i(t) \equiv \overrightarrow{u}_i \sigma_i \) and \(\phi_i(\overrightarrow{x}) \equiv \overrightarrow{v}_i^*\). In this arrangement of A, the function \(\alpha_i(t)\) evaluated in the time resolution where A was produced is represented by \(\overrightarrow{u}_i \sigma_i \). The same holds true for the POD-Modes \(\phi_i(\overrightarrow{x})\) and \(\overrightarrow{v}_i^*\) in the spatial resolution. This is the connection between POD and SVD. Two remarks we want to highlight here.
+
+The first lies in the possibility of a low rank approximation of the matrix A. For any \(k<r\) there is a corresponding \(\widetilde{\Sigma} \in \mathbb{R}^{kxk} \) such that \(\sigma_1 \geq \dots \geq \sigma_k \geq \sigma_{k+1} = \dots = \sigma_r =0\) and its reduced low ranked data matrix \(\\widetilde{A} \in \mathbb{C}^{MxN} \) is as follows
+\begin{equation}\label{eq10}
+\widetilde{A}=U \widetilde{\Sigma} V
+\end{equation} 
+The above mentioned optimality in the least square sense can now be seen that no other k-ranked matrix minimizes better the Forbenius norm \(\| A-\widetilde{A} \|\).\footnote{For a full proove see Gloub G. H  Matrix Computation S. 72}
+
+ As second remark, there is no need in inserting just one evaluation of the wave function into the data matrix A. There can be a large input set with different initial and/or boundary conditions. Rather than trying to reduce one wave function, the goal of this paper will be to extract a basis which sufficiently  describes a whole system of wave functions - and ultimately, describing ones with new parameter which are not included in the data set. For this let \(\phi_i(\overrightarrow{x})\) be the \(i_{th}\) POD-Mode\footnote{In the discrete form (SVD) the POD-modes should be replaced by the column of the V matrix in \ref{eq8}, the Integral by a summation, etc}
+ of such a data set. As already mentioned the POD-Modes are orthonormal, i.e.
+ \begin{equation}\label{eq11}
+\int_{-\infty}^\infty \phi_i(\overrightarrow{x})  \phi_j(\overrightarrow{x})^* d\overrightarrow{x} = \delta_{ij} 
+\end{equation} 
+To find the components \(\alpha_i(t_0)\) which describes an arbitrary frame \(\Psi(\overrightarrow{x},t_0)\) the best, this orthonormal condition \ref{eq11} and the premise \ref{eq7} is used to receive them directly
+ \begin{equation}\label{eq12}
+\alpha_i(t_0) =\int_{-\infty}^\infty \Psi(\overrightarrow{x},t_0) \phi_i(\overrightarrow{x})^* d\overrightarrow{x}
+\end{equation} 
+
+\section{Galerkin projection}
 
 \bibliographystyle{mn2e}
 
