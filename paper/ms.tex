@@ -71,7 +71,7 @@ Since the above mentioned method requires to compute the Fourier transform and i
 Where G is a function depending solely on \(\overrightarrow{a}\) and some external values denoted as V. The premise to achieve this reduction - and therefore of this paper - is the approximation of the wave function \(\psi( \overrightarrow {x},t)\) as following sum:
 
 \begin{equation}\label{eq7}
-\psi( \overrightarrow {x},t) = \sum_{i=0}^M \alpha_i(t) \varphi_i(\overrightarrow{x}) 
+\psi( \overrightarrow {x},t) \approx \sum_{i=0}^M \alpha_i(t) \varphi_i(\overrightarrow{x}) 
 \end{equation} 
 
 There are many types of this factorization. One could choose for example the Legendre polynomials or the Fourier series where for each of these choices, both the time-dependent function \(\alpha_i(t)\) and the spatial dependent function \(\varphi_i(\overrightarrow{x})\) would change. In this paper \(\varphi_i(\overrightarrow{x})\) is denoted the \(\i_{th}\) vector of an orthonormal basis, the so called the POD-Modes. The original concept of the POD goes back to Pearson (1901) with the principal component analysis. The POD is also known as the Karhunen-Loève decomposition or the singular value decomposition (SVD) (for a detailed discussion about the connection between the PCA, KLD and the SVD, see [5]). The main goal of the POD can be formulated as follows: \textit{to find a basis of a subspace that optimally describes a set of data in a least square sense}. \\
@@ -88,7 +88,7 @@ A=\sum_{i=1}^M \overrightarrow{u}_i \sigma_i \overrightarrow{v}_i^*
 \end{equation} 
 Comparing this \ref{eq7} yields to \(\alpha_i(t) \equiv \overrightarrow{u}_i \sigma_i \) and \(\varphi_i(\overrightarrow{x}) \equiv \overrightarrow{v}_i^*\). In this arrangement of A, the function \(\alpha_i(t)\) evaluated in the time resolution where A was produced is represented by \(\overrightarrow{u}_i \sigma_i \). The same holds true for the POD-Modes \(\varphi_i(\overrightarrow{x})\) and \(\overrightarrow{v}_i^*\) in the spatial resolution. This is the connection between POD and SVD. Two remarks we want to highlight here.
 
-The first lies in the possibility of a low rank approximation of the matrix A. For any \(k<r\) there is a corresponding \(\widetilde{\Sigma} \in \mathbb{R}^{kxk} \) such that \(\sigma_1 \geq \dots \geq \sigma_k \geq \sigma_{k+1} = \dots = \sigma_r =0\) and its reduced low ranked data matrix \(\\widetilde{A} \in \mathbb{C}^{MxN} \) is as follows
+The first lies in the possibility of a low rank approximation of the matrix A. For any \(k<r\) there is a corresponding \(\widetilde{\Sigma} \in \mathbb{R}^{kxk} \) such that \(\sigma_1 \geq \dots \geq \sigma_k \geq \sigma_{k+1} = \dots = \sigma_r =0\) and its reduced low ranked data matrix \(\widetilde{A} \in \mathbb{C}^{MxN} \) is as follows
 \begin{equation}\label{eq10}
 \widetilde{A}=U \widetilde{\Sigma} V
 \end{equation} 
@@ -103,13 +103,27 @@ To find the components \(\alpha_i(t_0)\) which describes an arbitrary frame \(\P
  \begin{equation}\label{eq12}
 \alpha_i(t_0) =\int_{-\infty}^\infty \Psi(\overrightarrow{x},t_0) \varphi_i(\overrightarrow{x})^* d\overrightarrow{x}
 \end{equation} 
-
-The dynamics of the components \(\alpha_i(t)\) are covert in the \textit{Galerkin projection}. For this we insert the premise \ref{eq7} into the main equation \ref{eq1}. This yields to
-
- \begin{equation}\label{eq12}
-\sum_{i=0}^M \varphi_i(\overrightarrow{x}) \dfrac {\partial } {\partial t} \alpha_i(t) =( -\dfrac {\nabla ^{2}} {2}+ \xi \rho) \psi( \overrightarrow {x},t)d\overrightarrow{x}
+The dynamics between \(\alpha_i(t)\) and \(\alpha_i(t+1)\) are covert in the \textit{Galerkin projection}. For this we insert the premise \ref{eq7} into the main equation \ref{eq1}. This yields to
+ \begin{equation}\label{eq13}
+\sum_{i=0}^M \varphi_i(\overrightarrow{x}) \dfrac {\partial } {\partial t} \alpha_i(t) = \sum_{i=0}^M \sum_{m=0}^M \sum_{n=0}^M \alpha_i(t) \alpha_m(t) \alpha_n(t)^* H_{imn}
 \end{equation} 
-
+where
+\begin{equation}\label{eq14}
+H_{imn} \equiv \dfrac {\nabla ^{2}} {2}(\varphi_i(\overrightarrow{x}))+\varphi_i(\overrightarrow{x}) \xi \rho_{mn}
+\end{equation}  
+\(\rho_{mn}\) describes the solution of the Poisson equation in following form: 
+\begin{equation}\label{eq15}
+\nabla(\rho_{mn}) = \varphi_m(\overrightarrow{x}) \varphi_n(\overrightarrow{x})^*
+\end{equation}
+Multiplying \ref{eq13} with the complex conjugate of the \(k_{th}\) POD-mode \(\varphi_{k}(\overrightarrow{x})^*\) and integrating over all space finally leads to
+\begin{equation}\label{eq16}
+\dfrac {\partial } {\partial t} \alpha_k(t) = \sum_{i=0}^M \sum_{m=0}^M \sum_{n=0}^M \alpha_i(t) \alpha_m(t) \alpha_n(t)^* \widetilde{H}_{imnk}
+\end{equation}
+with
+\begin{equation}\label{eq17}
+\widetilde{H}_{imnk} = 
+\end{equation}
+%%(-\sum_{i=0}^M \alpha_i(t) \dfrac {\nabla ^{2}(\varphi_i(\overrightarrow{x}))} {2} + \sum_{i=0}^M \sum_{j=0}^M \xi \rho) \psi( \overrightarrow {x},t)d\overrightarrow{x}
 
 
 \bibliographystyle{mn2e}
